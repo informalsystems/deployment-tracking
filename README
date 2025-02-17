@@ -1,0 +1,4 @@
+A simple server that serves to track deployment venues.
+
+In `src`, run `go run .` to start the server.
+Run `go run . --debug` to instead query the configured venue once.
