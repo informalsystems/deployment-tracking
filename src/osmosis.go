@@ -12,16 +12,17 @@ import (
 const OsmosisAPIURL = "https://sqs.osmosis.zone"
 
 // Osmosis implementation
-type OsmosisProtocol struct {
-	config ProtocolConfig
+type OsmosisPosition struct {
+	protocolConfig    ProtocolConfig
+	bidPositionConfig BidPositionConfig
 }
 
-func NewOsmosisProtocol(config ProtocolConfig) OsmosisProtocol {
-	return OsmosisProtocol{config: config}
+func NewOsmosisPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) OsmosisPosition {
+	return OsmosisPosition{protocolConfig: config, bidPositionConfig: bidPositionConfig}
 }
 
-func (p *OsmosisProtocol) FetchPoolData() (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/pools?IDs=%s", OsmosisAPIURL, p.config.PoolID)
+func (p OsmosisPosition) FetchPoolData() (map[string]interface{}, error) {
+	url := fmt.Sprintf("%s/pools?IDs=%s", p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolID)
 	debugLog("Fetching pool data from Osmosis API", map[string]string{"url": url})
 
 	resp, err := http.Get(url)
@@ -52,7 +53,7 @@ func (p *OsmosisProtocol) FetchPoolData() (map[string]interface{}, error) {
 	return pools[0], nil
 }
 
-func (p *OsmosisProtocol) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
+func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
 	// Fetch pool data
 	poolData, err := p.FetchPoolData()
 	if err != nil {
@@ -131,9 +132,9 @@ func (p *OsmosisProtocol) ComputeTVL(assetData map[string]interface{}) (*Holding
 	}, nil
 }
 
-func (p *OsmosisProtocol) fetchPositionsData(address string) (map[string]interface{}, error) {
+func (p OsmosisPosition) fetchPositionsData(address string) (map[string]interface{}, error) {
 	positionsURL := fmt.Sprintf("%s/osmosis/concentratedliquidity/v1beta1/positions/%s",
-		p.config.LCDEndpoint, address)
+		p.protocolConfig.AddressBalanceUrl, address)
 
 	resp, err := http.Get(positionsURL)
 	if err != nil {
@@ -153,7 +154,7 @@ func (p *OsmosisProtocol) fetchPositionsData(address string) (map[string]interfa
 	return positionsData, nil
 }
 
-func (p *OsmosisProtocol) calculateAssetValues(amounts map[string]int64, mapping *TokenMapping, assetData map[string]interface{}) ([]Asset, float64, error) {
+func (p *OsmosisPosition) calculateAssetValues(amounts map[string]int64, mapping *TokenMapping, assetData map[string]interface{}) ([]Asset, float64, error) {
 	var assets []Asset
 	totalUSD := 0.0
 
@@ -196,7 +197,7 @@ func createHoldings(assets []Asset, totalUSD float64, atomPrice float64) *Holdin
 	}
 }
 
-func (p *OsmosisProtocol) processPositionBalances(positions []interface{}) (map[string]int64, error) {
+func (p OsmosisPosition) processPositionBalances(positions []interface{}) (map[string]int64, error) {
 	balances := make(map[string]int64)
 
 	for _, pos := range positions {
@@ -210,8 +211,15 @@ func (p *OsmosisProtocol) processPositionBalances(positions []interface{}) (map[
 			continue
 		}
 
-		if fmt.Sprint(posInfo["pool_id"]) != p.config.PoolID {
+		// Only process the position that matches our position ID
+		if posInfo["position_id"].(string) != p.bidPositionConfig.PositionID {
 			continue
+		}
+
+		// check that the pool id matches what we expect for the position
+		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.bidPositionConfig.PoolID {
+			// return an error
+			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but expected %s", poolID, posInfo["position_id"].(string), p.bidPositionConfig.PoolID)
 		}
 
 		assets := []map[string]interface{}{
@@ -222,14 +230,17 @@ func (p *OsmosisProtocol) processPositionBalances(positions []interface{}) (map[
 		for _, asset := range assets {
 			denom := asset["denom"].(string)
 			amount, _ := strconv.ParseInt(asset["amount"].(string), 10, 64)
-			balances[denom] += amount
+			balances[denom] = amount
 		}
+
+		// We found our position, no need to continue
+		break
 	}
 
 	return balances, nil
 }
 
-func (p *OsmosisProtocol) processPositionRewards(positions []interface{}) (map[string]int64, error) {
+func (p OsmosisPosition) processPositionRewards(positions []interface{}) (map[string]int64, error) {
 	rewards := make(map[string]int64)
 
 	for _, pos := range positions {
@@ -243,8 +254,15 @@ func (p *OsmosisProtocol) processPositionRewards(positions []interface{}) (map[s
 			continue
 		}
 
-		if fmt.Sprint(posInfo["pool_id"]) != p.config.PoolID {
+		// Only process the position that matches our position ID
+		if posInfo["position_id"].(string) != p.bidPositionConfig.PositionID {
 			continue
+		}
+
+		// check that the pool id matches what we expect for the position
+		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.bidPositionConfig.PoolID {
+			// return an error
+			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but bid config claims %s", poolID, posInfo["position_id"].(string), p.bidPositionConfig.PoolID)
 		}
 
 		if spreadRewards, ok := position["claimable_spread_rewards"].([]interface{}); ok {
@@ -264,12 +282,15 @@ func (p *OsmosisProtocol) processPositionRewards(positions []interface{}) (map[s
 				rewards[denom] += amount
 			}
 		}
+
+		// We found our position, no need to continue
+		break
 	}
 
 	return rewards, nil
 }
 
-func (p *OsmosisProtocol) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p OsmosisPosition) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
 	positionsData, err := p.fetchPositionsData(address)
 	if err != nil {
 		return nil, err
@@ -303,7 +324,7 @@ func (p *OsmosisProtocol) ComputeAddressPrincipalHoldings(assetData map[string]i
 	return createHoldings(assets, totalUSD, atomPrice), nil
 }
 
-func (p *OsmosisProtocol) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p OsmosisPosition) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
 	positionsData, err := p.fetchPositionsData(address)
 	if err != nil {
 		return nil, err

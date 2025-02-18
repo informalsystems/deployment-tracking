@@ -13,10 +13,9 @@ import (
 
 // Constants
 const (
-	AssetListURL = "https://chains.cosmos.directory/osmosis"
-	LCDAPIBase   = "https://lcd.osmosis.zone"
-	Debug        = true
-	Address      = "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx"
+	Debug   = true
+	Address = "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx"
+	BidId   = "11.osmosis"
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -24,44 +23,40 @@ var resultCache *cache.Cache
 
 // --- Business Logic Layer ---
 
-// computeHoldings encapsulates the original main function's logic.
-func computeHoldings() (*VenueHoldings, error) {
-	// 1. Fetch asset data.
-	assetData, err := fetchAssetList()
+// computeHoldings computes the holdings for a given bid.
+func computeHoldings(bidId string) (*VenueHoldings, error) {
+	// get the config for the bid
+	bidConfig := bidMap[bidId]
+
+	// get the protocol config
+	protocolConfig := protocolConfigMap[bidConfig.Protocol]
+
+	// construct the protocol
+	protocol, err := NewDexProtocolFromConfig(protocolConfig, bidConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating protocol: %w", err)
+	}
+
+	assetData, err := fetchAssetList(protocolConfig.AssetListURL)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching asset list: %w", err)
 	}
 
-	// 2. Setup protocol configuration.
-	config := ProtocolConfig{
-		Protocol:     Osmosis,
-		PoolID:       "2371",
-		LCDEndpoint:  LCDAPIBase,
-		AssetListURL: AssetListURL,
-	}
-
-	// 3. Instantiate the protocol service.
-	protocol := NewOsmosisProtocol(config)
-
-	// 4. Compute the TVL.
 	tvl, err := protocol.ComputeTVL(assetData)
 	if err != nil {
 		return nil, fmt.Errorf("error computing TVL: %w", err)
 	}
 
-	// 5. Compute address holdings.
 	addressHoldings, err := protocol.ComputeAddressPrincipalHoldings(assetData, Address)
 	if err != nil {
 		return nil, fmt.Errorf("error computing address principal holdings: %w", err)
 	}
 
-	// 6. Compute address rewards.
 	rewardHoldings, err := protocol.ComputeAddressRewardHoldings(assetData, Address)
 	if err != nil {
 		return nil, fmt.Errorf("error computing address reward holdings: %w", err)
 	}
 
-	// 7. Construct the venue holdings object.
 	venueHoldings := VenueHoldings{
 		VenueTotal:       *tvl,
 		AddressPrincipal: *addressHoldings,
@@ -85,7 +80,7 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compute holdings.
-	holdings, err := computeHoldings()
+	holdings, err := computeHoldings(BidId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -114,7 +109,7 @@ func main() {
 
 	// If the --debug flag is provided, run the endpoint logic once and exit.
 	if *debug {
-		holdings, err := computeHoldings()
+		holdings, err := computeHoldings(BidId)
 		if err != nil {
 			log.Fatalf("Error computing holdings: %v", err)
 		}

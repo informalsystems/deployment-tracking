@@ -18,10 +18,10 @@ func debugLog(message string, data interface{}) {
 	}
 }
 
-func fetchAssetList() (map[string]interface{}, error) {
-	debugLog("Fetching asset list", map[string]string{"url": AssetListURL})
+func fetchAssetList(assetListUrl string) (map[string]interface{}, error) {
+	debugLog("Fetching asset list", map[string]string{"url": assetListUrl})
 
-	resp, err := http.Get(AssetListURL)
+	resp, err := http.Get(assetListUrl)
 	if err != nil {
 		return nil, err
 	}
