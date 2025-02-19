@@ -1,0 +1,240 @@
+package main
+
+import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math"
+	"net/http"
+	"strconv"
+)
+
+const (
+	NOLUS_ATOM    = "ibc/6CDD4663F2F09CD62285E2D45891FC149A3568E316CE3EBBE201A71A78A69388"
+	NOLUS_ST_ATOM = "ibc/FCFF8B19C61677F3B78E2A5AE3B4A34A8D23858D16905F253B8438B3AFD07FF8"
+)
+
+type NolusBidPositionConfig struct {
+	PoolContractAddress string
+	PoolContractToken   string
+	Address             string
+}
+
+func (bidConfig NolusBidPositionConfig) GetProtocol() Protocol {
+	return Nolus
+}
+
+func (bidConfig NolusBidPositionConfig) GetPoolID() string {
+	return bidConfig.PoolContractAddress
+}
+
+func (bidConfig NolusBidPositionConfig) GetAddress() string {
+	return bidConfig.Address
+}
+
+type NolusPosition struct {
+	protocolConfig    ProtocolConfig
+	bidPositionConfig NolusBidPositionConfig
+}
+
+func NewNolusPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*NolusPosition, error) {
+	nolusBidPositionConfig, ok := bidPositionConfig.(NolusBidPositionConfig)
+	if !ok {
+		return nil, fmt.Errorf("bidPositionConfig must be of NolusBidPositionConfig type")
+	}
+
+	return &NolusPosition{protocolConfig: config, bidPositionConfig: nolusBidPositionConfig}, nil
+}
+
+func (p NolusPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
+	return p.computeHoldings(assetData, p.getTotalPoolShares)
+}
+
+func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressBalanceShares(address) })
+}
+
+func (p NolusPosition) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressRewardsShares(address) })
+}
+
+func (p NolusPosition) computeHoldings(assetData map[string]interface{}, getSharesFunc func() (int, error)) (*Holdings, error) {
+	mapping, err := buildTokenMapping(assetData)
+	if err != nil {
+		return nil, fmt.Errorf("building token mapping: %s", err)
+	}
+
+	poolToken := p.bidPositionConfig.PoolContractToken
+	tokenInfo, err := mapping.GetTokenInfo(poolToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token info for %s. Error: %s", poolToken, err)
+	}
+
+	tokenShares, err := getSharesFunc()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load pool shares: %s", err.Error())
+	}
+
+	ratio, err := p.getShareToTokenRatio()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load share to token ratio: %s", err.Error())
+	}
+
+	rawTokenAmount := float64(tokenShares) * ratio
+	adjustedTokenAmount := rawTokenAmount / math.Pow(10, float64(tokenInfo.Decimals))
+
+	totalValueUSD, totalValueAtom, err := getTokenValues(adjustedTokenAmount, *tokenInfo, assetData)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute token values: %s", err)
+	}
+
+	holdings := Holdings{
+		Balances: []Asset{
+			{
+				Denom:       poolToken,
+				Amount:      adjustedTokenAmount,
+				CoingeckoID: nil,
+				USDValue:    totalValueUSD,
+				DisplayName: tokenInfo.DisplayName,
+			},
+		},
+		TotalUSDC: totalValueUSD,
+		TotalAtom: totalValueAtom,
+	}
+
+	return &holdings, nil
+}
+
+func (p NolusPosition) getShareToTokenRatio() (float64, error) {
+	queryJson := map[string]interface{}{
+		"price": []interface{}{},
+	}
+
+	data, err := p.querySmartContractData(queryJson)
+	if err != nil {
+		return 0, err
+	}
+
+	amountStr, ok := data["amount"].(map[string]interface{})["amount"].(string)
+	if !ok {
+		return 0, fmt.Errorf("invalid pool balance structure")
+	}
+
+	amountQuoteStr, ok := data["amount_quote"].(map[string]interface{})["amount"].(string)
+	if !ok {
+		return 0, fmt.Errorf("invalid pool balance structure")
+	}
+
+	amount, err := strconv.ParseFloat(amountStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse amount into float64: %s", err)
+	}
+
+	amountQuote, err := strconv.ParseFloat(amountQuoteStr, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse amount_quote into float64: %s", err)
+	}
+
+	return amountQuote / amount, nil
+}
+
+func (p NolusPosition) getTotalPoolShares() (int, error) {
+	queryJson := map[string]interface{}{
+		"lpp_balance": []interface{}{},
+	}
+
+	data, err := p.querySmartContractData(queryJson)
+	if err != nil {
+		return 0, err
+	}
+
+	balanceShares, ok := data["balance_nlpn"].(map[string]interface{})["amount"].(string)
+	if !ok {
+		return 0, fmt.Errorf("invalid balance_nlpn")
+	}
+
+	poolBalance, err := strconv.Atoi(balanceShares)
+	return poolBalance, err
+}
+
+func (p NolusPosition) getAddressBalanceShares(address string) (int, error) {
+	queryJson := map[string]interface{}{
+		"balance": struct {
+			Address string `json:"address"`
+		}{Address: address},
+	}
+
+	data, err := p.querySmartContractData(queryJson)
+	if err != nil {
+		return 0, err
+	}
+
+	balanceShares, ok := data["balance"].(string)
+	if !ok {
+		return 0, fmt.Errorf("invalid balance")
+	}
+
+	addressBalance, err := strconv.Atoi(balanceShares)
+	return addressBalance, err
+}
+
+func (p NolusPosition) getAddressRewardsShares(address string) (int, error) {
+	queryJson := map[string]interface{}{
+		"rewards": struct {
+			Address string `json:"address"`
+		}{Address: address},
+	}
+
+	data, err := p.querySmartContractData(queryJson)
+	if err != nil {
+		return 0, err
+	}
+
+	addressRewardsShares, ok := data["rewards"].(map[string]interface{})["amount"].(string)
+	if !ok {
+		return 0, fmt.Errorf("invalid balance")
+	}
+
+	addressRewards, err := strconv.Atoi(addressRewardsShares)
+	return addressRewards, err
+}
+
+func (p NolusPosition) querySmartContractData(query map[string]interface{}) (map[string]interface{}, error) {
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query into JSON: %s", err.Error())
+	}
+
+	queryEncoded := base64.RawStdEncoding.EncodeToString([]byte(queryJson))
+	url := fmt.Sprintf("%s/%s/smart/%s", p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolContractAddress, string(queryEncoded))
+	debugLog("Fetching data from smart contract", map[string]string{"url": url})
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("fetching data failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		debugLog("Failed to fetch smart contract data", map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"response":    string(body),
+		})
+		return nil, fmt.Errorf("fetching smart contract data: %d", resp.StatusCode)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("decoding smart contract data: %v", err)
+	}
+
+	debugLog("contract response", response)
+
+	if len(response) == 0 {
+		return nil, fmt.Errorf("smart contract returned no data")
+	}
+
+	return response["data"].(map[string]interface{}), nil
+}

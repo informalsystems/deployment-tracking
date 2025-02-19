@@ -11,14 +11,37 @@ import (
 
 const OsmosisAPIURL = "https://sqs.osmosis.zone"
 
+type OsmosisBidPositionConfig struct {
+	PoolID     string
+	Address    string
+	PositionID string
+}
+
+func (bidConfig OsmosisBidPositionConfig) GetProtocol() Protocol {
+	return Osmosis
+}
+
+func (bidConfig OsmosisBidPositionConfig) GetPoolID() string {
+	return bidConfig.PoolID
+}
+
+func (bidConfig OsmosisBidPositionConfig) GetAddress() string {
+	return bidConfig.Address
+}
+
 // Osmosis implementation
 type OsmosisPosition struct {
 	protocolConfig    ProtocolConfig
-	bidPositionConfig BidPositionConfig
+	bidPositionConfig OsmosisBidPositionConfig
 }
 
-func NewOsmosisPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) OsmosisPosition {
-	return OsmosisPosition{protocolConfig: config, bidPositionConfig: bidPositionConfig}
+func NewOsmosisPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*OsmosisPosition, error) {
+	osmosisBidPositionConfig, ok := bidPositionConfig.(OsmosisBidPositionConfig)
+	if !ok {
+		return nil, fmt.Errorf("bidPositionConfig must be of OsmosisBidPositionConfig type")
+	}
+
+	return &OsmosisPosition{protocolConfig: config, bidPositionConfig: osmosisBidPositionConfig}, nil
 }
 
 func (p OsmosisPosition) FetchPoolData() (map[string]interface{}, error) {
@@ -108,7 +131,7 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 			Amount:      adjustedAmount,
 			CoingeckoID: nil, // Optional field
 			USDValue:    usdValue,
-			DisplayName: &displayName,
+			DisplayName: displayName,
 		}
 		poolAssets = append(poolAssets, asset)
 	}
@@ -176,7 +199,7 @@ func (p *OsmosisPosition) calculateAssetValues(amounts map[string]int64, mapping
 			Amount:      adjustedAmount,
 			CoingeckoID: nil,
 			USDValue:    usdValue,
-			DisplayName: &displayName,
+			DisplayName: displayName,
 		}
 		assets = append(assets, asset)
 	}
