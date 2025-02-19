@@ -35,6 +35,7 @@ type ProtocolConfig struct {
 	PoolInfoUrl       string
 	AddressBalanceUrl string
 	Protocol          Protocol
+	ChainID           string
 }
 
 type Asset struct {
@@ -70,6 +71,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositi
 		return NewOsmosisPosition(config, bidPositionConfig), nil
 	case NeutronAstroport:
 		return NewAstroportPosition(config, bidPositionConfig), nil
+	case TerraAstroport:
+		return NewAstroportPosition(config, bidPositionConfig), nil
 	}
 
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
@@ -81,11 +84,19 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		PoolInfoUrl:       "https://sqs.osmosis.zone",
 		AssetListURL:      "https://chains.cosmos.directory/osmosis",
 		AddressBalanceUrl: "https://lcd.osmosis.zone/",
+		ChainID:           "osmosis-1",
 	},
 	NeutronAstroport: {
 		Protocol:     NeutronAstroport,
 		PoolInfoUrl:  "https://rest-kralum.neutron-1.neutron.org/",
 		AssetListURL: "https://chains.cosmos.directory/neutron",
+		ChainID:      "neutron-1",
+	},
+	TerraAstroport: {
+		Protocol:     TerraAstroport,
+		AssetListURL: "https://chains.cosmos.directory/terra2",
+		PoolInfoUrl:  "https://rest.cosmos.directory/terra2",
+		ChainID:      "phoenix-1",
 	},
 }
 
@@ -116,11 +127,15 @@ var bidMap = map[string]BidPositionConfig{
 		Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
 	},
 	"7.statom": {
-		Protocol:    TerraAstroport,
-		PoolAddress: "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+		Protocol:         TerraAstroport,
+		PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
 	},
 	"7.datom": {
-		Protocol:    TerraAstroport,
-		PoolAddress: "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+		Protocol:         TerraAstroport,
+		PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
 	},
 }

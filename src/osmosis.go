@@ -61,7 +61,7 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 	}
 
 	// Get token mappings
-	mapping, err := buildTokenMapping(assetData)
+	mapping, err := buildTokenMapping(assetData, p.protocolConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("building token mapping: %s", err)
 	}
@@ -93,7 +93,7 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 
 		// Get token price from asset data
 		usdValue := 0.0
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(assetData, displayName, p.protocolConfig.ChainID, denom)
 		if err != nil {
 			return nil, fmt.Errorf("fetching token price: %s", err)
 		}
@@ -114,7 +114,7 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 	}
 
 	// Get ATOM price and calculate equivalent
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getTokenPrice(assetData, "atom", p.protocolConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("fetching ATOM price: %s", err)
 	}

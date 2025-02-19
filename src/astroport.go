@@ -76,7 +76,7 @@ func (p AstroportPosition) ComputeTVL(assetData map[string]interface{}) (*Holdin
 	}
 
 	// Get token mappings
-	mapping, err := buildTokenMapping(assetData)
+	mapping, err := buildTokenMapping(assetData, p.protocolConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("building token mapping: %v", err)
 	}
@@ -85,6 +85,8 @@ func (p AstroportPosition) ComputeTVL(assetData map[string]interface{}) (*Holdin
 	var poolAssets []Asset
 	totalValueUSD := 0.0
 
+	log.Println("Processing assets: ", result.Data.Assets)
+
 	for _, asset := range result.Data.Assets {
 		denom := asset.Info.NativeToken.Denom
 		amount, err := strconv.ParseInt(asset.Amount, 10, 64)
@@ -92,14 +94,20 @@ func (p AstroportPosition) ComputeTVL(assetData map[string]interface{}) (*Holdin
 			return nil, fmt.Errorf("parsing amount: %v", err)
 		}
 
-		exp := mapping.ExponentMap[denom]
-		displayName := mapping.DisplayNameMap[denom]
+		exp, ok := mapping.ExponentMap[denom]
+		if !ok {
+			return nil, fmt.Errorf("missing exponent for denom %s", denom)
+		}
+		displayName, ok := mapping.DisplayNameMap[denom]
+		if !ok {
+			return nil, fmt.Errorf("missing display name for denom %s", denom)
+		}
 
 		// Calculate adjusted amount
 		adjustedAmount := float64(amount) / math.Pow(10, float64(exp))
 
 		// Get token price
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(assetData, displayName, p.protocolConfig.ChainID, coingeckoID)
 		if err != nil {
 			return nil, fmt.Errorf("getting token price: %v", err)
 		}
@@ -116,7 +124,7 @@ func (p AstroportPosition) ComputeTVL(assetData map[string]interface{}) (*Holdin
 	}
 
 	// Get ATOM price for conversion
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getTokenPrice(assetData, "atom", p.protocolConfig.ChainID, "cosmos")
 	if err != nil {
 		return nil, fmt.Errorf("getting ATOM price: %v", err)
 	}
@@ -269,7 +277,7 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData map[string]
 	}
 
 	// 5. Convert to Holdings
-	mapping, err := buildTokenMapping(assetData)
+	mapping, err := buildTokenMapping(assetData, p.protocolConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("building token mapping: %v", err)
 	}
@@ -285,7 +293,7 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData map[string]
 
 		adjustedAmount := float64(amount) / math.Pow(10, float64(exp))
 
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(assetData, displayName, p.protocolConfig.ChainID, coingeckoID)
 		if err != nil {
 			return nil, fmt.Errorf("getting token price: %v", err)
 		}
@@ -302,7 +310,7 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData map[string]
 		assets = append(assets, asset)
 	}
 
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getTokenPrice(assetData, "atom", p.protocolConfig.ChainID, "cosmos")
 	if err != nil {
 		return nil, fmt.Errorf("getting ATOM price: %v", err)
 	}
@@ -361,7 +369,7 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData map[string]int
 	}
 
 	// Build token mappings
-	mapping, err := buildTokenMapping(assetData)
+	mapping, err := buildTokenMapping(assetData, p.protocolConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("building token mapping: %v", err)
 	}
@@ -381,7 +389,7 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData map[string]int
 		displayName := mapping.DisplayNameMap[denom]
 		adjustedAmount := float64(amount) / math.Pow(10, float64(exp))
 
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(assetData, displayName, p.protocolConfig.ChainID, coingeckoID)
 		if err != nil {
 			return nil, fmt.Errorf("getting token price: %v", err)
 		}
@@ -399,7 +407,7 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData map[string]int
 	}
 
 	// Get ATOM price for conversion
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getTokenPrice(assetData, "atom", p.protocolConfig.ChainID, "cosmos")
 	if err != nil {
 		return nil, fmt.Errorf("getting ATOM price: %v", err)
 	}
