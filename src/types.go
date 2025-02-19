@@ -6,8 +6,9 @@ import "fmt"
 type Protocol string
 
 const (
-	Osmosis   Protocol = "osmosis"
-	Astroport Protocol = "astroport"
+	Osmosis          Protocol = "osmosis"
+	NeutronAstroport Protocol = "neutron.astroport"
+	TerraAstroport   Protocol = "terra.astroport"
 )
 
 // Core data structures
@@ -19,10 +20,12 @@ const (
 // concrete position, namely the pool ID,
 // address the position is associated with, and position ID.
 type BidPositionConfig struct {
-	PoolID     string
-	Address    string
-	PositionID string
-	Protocol   Protocol
+	PoolID           string
+	Address          string
+	PositionID       string
+	Protocol         Protocol
+	PoolAddress      string
+	IncentiveAddress string
 }
 
 // ProtocolConfig holds the configuration for a protocol, independent
@@ -65,6 +68,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositi
 	switch config.Protocol {
 	case Osmosis:
 		return NewOsmosisPosition(config, bidPositionConfig), nil
+	case NeutronAstroport:
+		return NewAstroportPosition(config, bidPositionConfig), nil
 	}
 
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
@@ -76,6 +81,11 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		PoolInfoUrl:       "https://sqs.osmosis.zone",
 		AssetListURL:      "https://chains.cosmos.directory/osmosis",
 		AddressBalanceUrl: "https://lcd.osmosis.zone/",
+	},
+	NeutronAstroport: {
+		Protocol:     NeutronAstroport,
+		PoolInfoUrl:  "https://rest-kralum.neutron-1.neutron.org/",
+		AssetListURL: "https://chains.cosmos.directory/neutron",
 	},
 }
 
@@ -98,5 +108,19 @@ var bidMap = map[string]BidPositionConfig{
 		PoolID:     "2371",
 		Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 		PositionID: "11124249",
+	},
+	"11.astroport": {
+		Protocol:         NeutronAstroport,
+		PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+		IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+		Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	},
+	"7.statom": {
+		Protocol:    TerraAstroport,
+		PoolAddress: "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+	},
+	"7.datom": {
+		Protocol:    TerraAstroport,
+		PoolAddress: "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 	},
 }
