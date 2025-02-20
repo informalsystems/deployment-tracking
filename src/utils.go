@@ -41,6 +41,50 @@ type TokenMapping struct {
 	DisplayNameMap map[string]string
 }
 
+func (mapping TokenMapping) GetTokenInfo(denom string) (*TokenInfo, error) {
+	displayName, ok := mapping.DisplayNameMap[denom]
+	if !ok {
+		return nil, fmt.Errorf("failed to get display name for: %s", denom)
+	}
+
+	decimals, ok := mapping.ExponentMap[denom]
+	if !ok {
+		return nil, fmt.Errorf("failed to get decimals for: %s", denom)
+	}
+
+	return &TokenInfo{
+		Denom:       denom,
+		DisplayName: displayName,
+		Decimals:    decimals,
+	}, nil
+}
+
+type TokenInfo struct {
+	Denom       string
+	DisplayName string
+	Decimals    int
+}
+
+func getTokenValues(
+	adjustedAmount float64,
+	tokenInfo TokenInfo,
+	assetData map[string]interface{}) (float64, float64, error) {
+	price, err := getTokenPrice(assetData, tokenInfo.DisplayName)
+	if err != nil {
+		return 0, 0, fmt.Errorf("fetching token price: %s", err)
+	}
+
+	usdValue := adjustedAmount * price
+	atomPrice, err := getTokenPrice(assetData, "atom")
+	if err != nil {
+		return 0, 0, fmt.Errorf("fetching ATOM price: %s", err)
+	}
+
+	atomValue := usdValue / atomPrice
+
+	return usdValue, atomValue, nil
+}
+
 func getTokenPrice(assetData map[string]interface{}, tokenDisplayName string) (float64, error) {
 	debugLog("Getting token price", map[string]string{"token": tokenDisplayName})
 

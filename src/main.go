@@ -15,7 +15,7 @@ import (
 const (
 	Debug   = true
 	Address = "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx"
-	BidId   = "11.osmosis"
+	BidId   = "5"
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -29,7 +29,7 @@ func computeHoldings(bidId string) (*VenueHoldings, error) {
 	bidConfig := bidMap[bidId]
 
 	// get the protocol config
-	protocolConfig := protocolConfigMap[bidConfig.Protocol]
+	protocolConfig := protocolConfigMap[bidConfig.GetProtocol()]
 
 	// construct the protocol
 	protocol, err := NewDexProtocolFromConfig(protocolConfig, bidConfig)
@@ -47,12 +47,12 @@ func computeHoldings(bidId string) (*VenueHoldings, error) {
 		return nil, fmt.Errorf("error computing TVL: %w", err)
 	}
 
-	addressHoldings, err := protocol.ComputeAddressPrincipalHoldings(assetData, Address)
+	addressHoldings, err := protocol.ComputeAddressPrincipalHoldings(assetData, bidConfig.GetAddress())
 	if err != nil {
 		return nil, fmt.Errorf("error computing address principal holdings: %w", err)
 	}
 
-	rewardHoldings, err := protocol.ComputeAddressRewardHoldings(assetData, Address)
+	rewardHoldings, err := protocol.ComputeAddressRewardHoldings(assetData, bidConfig.GetAddress())
 	if err != nil {
 		return nil, fmt.Errorf("error computing address reward holdings: %w", err)
 	}
