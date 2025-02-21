@@ -13,9 +13,8 @@ import (
 
 // Constants
 const (
-	Debug   = true
-	Address = "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx"
-	BidId   = "5"
+	Debug = true
+	BidId = "11.osmosis"
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -26,7 +25,10 @@ var resultCache *cache.Cache
 // computeHoldings computes the holdings for a given bid.
 func computeHoldings(bidId string) (*VenueHoldings, error) {
 	// get the config for the bid
-	bidConfig := bidMap[bidId]
+	bidConfig, ok := bidMap[bidId]
+	if !ok {
+		return nil, fmt.Errorf("bid not found: %s", bidId)
+	}
 
 	// get the protocol config
 	protocolConfig := protocolConfigMap[bidConfig.GetProtocol()]

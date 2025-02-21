@@ -47,28 +47,24 @@ func NewNolusPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig
 	return &NolusPosition{protocolConfig: config, bidPositionConfig: nolusBidPositionConfig}, nil
 }
 
-func (p NolusPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
+func (p NolusPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	return p.computeHoldings(assetData, p.getTotalPoolShares)
 }
 
-func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressBalanceShares(address) })
 }
 
-func (p NolusPosition) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p NolusPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressRewardsShares(address) })
 }
 
-func (p NolusPosition) computeHoldings(assetData map[string]interface{}, getSharesFunc func() (int, error)) (*Holdings, error) {
-	mapping, err := buildTokenMapping(assetData)
-	if err != nil {
-		return nil, fmt.Errorf("building token mapping: %s", err)
-	}
-
+func (p NolusPosition) computeHoldings(assetData *ChainInfo, getSharesFunc func() (int, error)) (*Holdings, error) {
 	poolToken := p.bidPositionConfig.PoolContractToken
-	tokenInfo, err := mapping.GetTokenInfo(poolToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token info for %s. Error: %s", poolToken, err)
+
+	tokenInfo, ok := assetData.Tokens[poolToken]
+	if !ok {
+		return nil, fmt.Errorf("token info not found for %s", poolToken)
 	}
 
 	tokenShares, err := getSharesFunc()
@@ -84,7 +80,7 @@ func (p NolusPosition) computeHoldings(assetData map[string]interface{}, getShar
 	rawTokenAmount := float64(tokenShares) * ratio
 	adjustedTokenAmount := rawTokenAmount / math.Pow(10, float64(tokenInfo.Decimals))
 
-	totalValueUSD, totalValueAtom, err := getTokenValues(adjustedTokenAmount, *tokenInfo, assetData)
+	totalValueUSD, totalValueAtom, err := getTokenValues(adjustedTokenAmount, tokenInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute token values: %s", err)
 	}
@@ -96,7 +92,7 @@ func (p NolusPosition) computeHoldings(assetData map[string]interface{}, getShar
 				Amount:      adjustedTokenAmount,
 				CoingeckoID: nil,
 				USDValue:    totalValueUSD,
-				DisplayName: tokenInfo.DisplayName,
+				DisplayName: tokenInfo.Display,
 			},
 		},
 		TotalUSDC: totalValueUSD,

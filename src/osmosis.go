@@ -76,17 +76,11 @@ func (p OsmosisPosition) FetchPoolData() (map[string]interface{}, error) {
 	return pools[0], nil
 }
 
-func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
+func (p OsmosisPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	// Fetch pool data
 	poolData, err := p.FetchPoolData()
 	if err != nil {
 		return nil, fmt.Errorf("fetching pool data: %s", err)
-	}
-
-	// Get token mappings
-	mapping, err := buildTokenMapping(assetData)
-	if err != nil {
-		return nil, fmt.Errorf("building token mapping: %s", err)
 	}
 
 	// Get balances array from pool data
@@ -108,15 +102,14 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 
 		denom := balanceMap["denom"].(string)
 		rawAmount, _ := strconv.ParseInt(balanceMap["amount"].(string), 10, 64)
-		exp := mapping.ExponentMap[denom]
-		displayName := mapping.DisplayNameMap[denom]
+		tokenInfo := assetData.Tokens[denom]
 
 		// Calculate adjusted amount
-		adjustedAmount := float64(rawAmount) / math.Pow(10, float64(exp))
+		adjustedAmount := float64(rawAmount) / math.Pow(10, float64(tokenInfo.Decimals))
 
 		// Get token price from asset data
 		usdValue := 0.0
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(tokenInfo.CoingeckoID)
 		if err != nil {
 			return nil, fmt.Errorf("fetching token price: %s", err)
 		}
@@ -131,13 +124,13 @@ func (p OsmosisPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings
 			Amount:      adjustedAmount,
 			CoingeckoID: nil, // Optional field
 			USDValue:    usdValue,
-			DisplayName: displayName,
+			DisplayName: tokenInfo.Display,
 		}
 		poolAssets = append(poolAssets, asset)
 	}
 
 	// Get ATOM price and calculate equivalent
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getAtomPrice()
 	if err != nil {
 		return nil, fmt.Errorf("fetching ATOM price: %s", err)
 	}
@@ -177,16 +170,17 @@ func (p OsmosisPosition) fetchPositionsData(address string) (map[string]interfac
 	return positionsData, nil
 }
 
-func (p *OsmosisPosition) calculateAssetValues(amounts map[string]int64, mapping *TokenMapping, assetData map[string]interface{}) ([]Asset, float64, error) {
+func (p *OsmosisPosition) calculateAssetValues(amounts map[string]int64, assetData *ChainInfo) ([]Asset, float64, error) {
 	var assets []Asset
 	totalUSD := 0.0
 
 	for denom, amount := range amounts {
-		exp := mapping.ExponentMap[denom]
+		tokenInfo := assetData.Tokens[denom]
+		exp := tokenInfo.Decimals
 		adjustedAmount := float64(amount) / math.Pow(10, float64(exp))
-		displayName := mapping.DisplayNameMap[denom]
+		displayName := tokenInfo.Display
 
-		price, err := getTokenPrice(assetData, displayName)
+		price, err := getTokenPrice(tokenInfo.CoingeckoID)
 		if err != nil {
 			return nil, 0, fmt.Errorf("getting token price: %v", err)
 		}
@@ -313,15 +307,10 @@ func (p OsmosisPosition) processPositionRewards(positions []interface{}) (map[st
 	return rewards, nil
 }
 
-func (p OsmosisPosition) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p OsmosisPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	positionsData, err := p.fetchPositionsData(address)
 	if err != nil {
 		return nil, err
-	}
-
-	mapping, err := buildTokenMapping(assetData)
-	if err != nil {
-		return nil, fmt.Errorf("building token mapping: %v", err)
 	}
 
 	positions, ok := positionsData["positions"].([]interface{})
@@ -334,12 +323,12 @@ func (p OsmosisPosition) ComputeAddressPrincipalHoldings(assetData map[string]in
 		return nil, err
 	}
 
-	assets, totalUSD, err := p.calculateAssetValues(balances, mapping, assetData)
+	assets, totalUSD, err := p.calculateAssetValues(balances, assetData)
 	if err != nil {
 		return nil, err
 	}
 
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getAtomPrice()
 	if err != nil {
 		return nil, fmt.Errorf("getting ATOM price: %v", err)
 	}
@@ -347,15 +336,10 @@ func (p OsmosisPosition) ComputeAddressPrincipalHoldings(assetData map[string]in
 	return createHoldings(assets, totalUSD, atomPrice), nil
 }
 
-func (p OsmosisPosition) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p OsmosisPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	positionsData, err := p.fetchPositionsData(address)
 	if err != nil {
 		return nil, err
-	}
-
-	mapping, err := buildTokenMapping(assetData)
-	if err != nil {
-		return nil, fmt.Errorf("building token mapping: %v", err)
 	}
 
 	positions, ok := positionsData["positions"].([]interface{})
@@ -368,12 +352,12 @@ func (p OsmosisPosition) ComputeAddressRewardHoldings(assetData map[string]inter
 		return nil, err
 	}
 
-	assets, totalUSD, err := p.calculateAssetValues(rewards, mapping, assetData)
+	assets, totalUSD, err := p.calculateAssetValues(rewards, assetData)
 	if err != nil {
 		return nil, err
 	}
 
-	atomPrice, err := getTokenPrice(assetData, "atom")
+	atomPrice, err := getAtomPrice()
 	if err != nil {
 		return nil, fmt.Errorf("getting ATOM price: %v", err)
 	}
