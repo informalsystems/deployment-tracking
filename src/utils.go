@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -78,4 +80,44 @@ func fetchAssetList(assetListUrl string) (*ChainInfo, error) {
 		ChainID: chainID,
 		Tokens:  tokens,
 	}, nil
+}
+
+func QuerySmartContractData(nodeUrl string, contractAddress string,
+	query map[string]interface{}) (map[string]interface{}, error) {
+	queryJson, err := json.Marshal(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal query into JSON: %s", err.Error())
+	}
+
+	queryEncoded := base64.StdEncoding.EncodeToString([]byte(queryJson))
+	url := fmt.Sprintf("%s/%s/smart/%s", nodeUrl, contractAddress, string(queryEncoded))
+	debugLog("Fetching data from smart contract", map[string]string{"url": url})
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("fetching data failed: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		debugLog("Failed to fetch smart contract data", map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"response":    string(body),
+		})
+		return nil, fmt.Errorf("fetching smart contract data: %d", resp.StatusCode)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("decoding smart contract data: %v", err)
+	}
+
+	debugLog("contract response", response)
+
+	if len(response) == 0 {
+		return nil, fmt.Errorf("smart contract returned no data")
+	}
+
+	return response["data"].(map[string]interface{}), nil
 }
