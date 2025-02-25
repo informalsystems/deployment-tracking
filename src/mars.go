@@ -43,30 +43,25 @@ func NewMarsPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig)
 	return &MarsPosition{protocolConfig: config, bidPositionConfig: marsBidPositionConfig}, nil
 }
 
-func (p MarsPosition) ComputeTVL(assetData map[string]interface{}) (*Holdings, error) {
+func (p MarsPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	return p.computeHoldings(assetData, p.getTotalDepositInPool)
 }
 
-func (p MarsPosition) ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p MarsPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	return p.computeHoldings(assetData, p.getCreditAccountDepositInPool)
 }
 
-func (p MarsPosition) ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error) {
+func (p MarsPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	// rewards are already counted-in into principal address holdings, since Mars protocol doesn't keep track of
 	// the initial holdings and yield separately
 	return p.computeHoldings(assetData, func() (int, error) { return 0, nil })
 }
 
-func (p MarsPosition) computeHoldings(assetData map[string]interface{}, getTokenAmountFunc func() (int, error)) (*Holdings, error) {
-	mapping, err := buildTokenMapping(assetData)
-	if err != nil {
-		return nil, fmt.Errorf("building token mapping: %s", err)
-	}
-
+func (p MarsPosition) computeHoldings(assetData *ChainInfo, getTokenAmountFunc func() (int, error)) (*Holdings, error) {
 	poolToken := p.bidPositionConfig.DepositedDenom
-	tokenInfo, err := mapping.GetTokenInfo(poolToken)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get token info for %s. Error: %s", poolToken, err)
+	tokenInfo, ok := assetData.Tokens[poolToken]
+	if !ok {
+		return nil, fmt.Errorf("token info not found for %s", poolToken)
 	}
 
 	tokenAmount, err := getTokenAmountFunc()
@@ -75,7 +70,7 @@ func (p MarsPosition) computeHoldings(assetData map[string]interface{}, getToken
 	}
 
 	adjustedTokenAmount := float64(tokenAmount) / math.Pow(10, float64(tokenInfo.Decimals))
-	totalValueUSD, totalValueAtom, err := getTokenValues(adjustedTokenAmount, *tokenInfo, assetData)
+	totalValueUSD, totalValueAtom, err := getTokenValues(adjustedTokenAmount, tokenInfo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute token values: %s", err)
 	}
@@ -87,7 +82,7 @@ func (p MarsPosition) computeHoldings(assetData map[string]interface{}, getToken
 				Amount:      adjustedTokenAmount,
 				CoingeckoID: nil,
 				USDValue:    totalValueUSD,
-				DisplayName: tokenInfo.DisplayName,
+				DisplayName: tokenInfo.Display,
 			},
 		},
 		TotalUSDC: totalValueUSD,
