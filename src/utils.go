@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 // Helper functions
@@ -18,7 +17,7 @@ func debugLog(message string, data interface{}) {
 	}
 }
 
-func fetchAssetList(assetListUrl string) (map[string]interface{}, error) {
+func fetchAssetList(assetListUrl string) (*ChainInfo, error) {
 	debugLog("Fetching asset list", map[string]string{"url": assetListUrl})
 
 	resp, err := http.Get(assetListUrl)
@@ -32,113 +31,14 @@ func fetchAssetList(assetListUrl string) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	return result, nil
-}
-
-// TokenMapping holds token metadata
-type TokenMapping struct {
-	ExponentMap    map[string]int
-	DisplayNameMap map[string]string
-}
-
-func (mapping TokenMapping) GetTokenInfo(denom string) (*TokenInfo, error) {
-	displayName, ok := mapping.DisplayNameMap[denom]
-	if !ok {
-		return nil, fmt.Errorf("failed to get display name for: %s", denom)
-	}
-
-	decimals, ok := mapping.ExponentMap[denom]
-	if !ok {
-		return nil, fmt.Errorf("failed to get decimals for: %s", denom)
-	}
-
-	return &TokenInfo{
-		Denom:       denom,
-		DisplayName: displayName,
-		Decimals:    decimals,
-	}, nil
-}
-
-type TokenInfo struct {
-	Denom       string
-	DisplayName string
-	Decimals    int
-}
-
-func getTokenValues(
-	adjustedAmount float64,
-	tokenInfo TokenInfo,
-	assetData map[string]interface{}) (float64, float64, error) {
-	price, err := getTokenPrice(assetData, tokenInfo.DisplayName)
-	if err != nil {
-		return 0, 0, fmt.Errorf("fetching token price: %s", err)
-	}
-
-	usdValue := adjustedAmount * price
-	atomPrice, err := getTokenPrice(assetData, "atom")
-	if err != nil {
-		return 0, 0, fmt.Errorf("fetching ATOM price: %s", err)
-	}
-
-	atomValue := usdValue / atomPrice
-
-	return usdValue, atomValue, nil
-}
-
-func getTokenPrice(assetData map[string]interface{}, tokenDisplayName string) (float64, error) {
-	debugLog("Getting token price", map[string]string{"token": tokenDisplayName})
-
-	// Navigate to coingecko prices
-	chain, ok := assetData["chain"].(map[string]interface{})
-	if !ok {
-		return 0, fmt.Errorf("invalid chain data structure")
-	}
-
-	prices, ok := chain["prices"].(map[string]interface{})
-	if !ok {
-		return 0, fmt.Errorf("invalid prices data structure")
-	}
-
-	coingeckoPrices, ok := prices["coingecko"].(map[string]interface{})
-	if !ok {
-		return 0, fmt.Errorf("invalid coingecko prices data structure")
-	}
-
-	// Try exact match first
-	if priceData, ok := coingeckoPrices[tokenDisplayName].(map[string]interface{}); ok {
-		if price, ok := priceData["usd"].(float64); ok {
-			debugLog("Found price for token", map[string]interface{}{
-				"token": tokenDisplayName,
-				"price": price,
-			})
-			return price, nil
-		}
-	}
-
-	// Try lowercase version
-	if priceData, ok := coingeckoPrices[strings.ToLower(tokenDisplayName)].(map[string]interface{}); ok {
-		if price, ok := priceData["usd"].(float64); ok {
-			debugLog("Found price for lowercase token", map[string]interface{}{
-				"token": strings.ToLower(tokenDisplayName),
-				"price": price,
-			})
-			return price, nil
-		}
-	}
-
-	debugLog("No price found for token", map[string]string{"token": tokenDisplayName})
-	return 0, fmt.Errorf("price not found for token: %s", tokenDisplayName)
-}
-
-func buildTokenMapping(assetData map[string]interface{}) (*TokenMapping, error) {
-	mapping := &TokenMapping{
-		ExponentMap:    make(map[string]int),
-		DisplayNameMap: make(map[string]string),
-	}
-
-	chain, ok := assetData["chain"].(map[string]interface{})
+	chain, ok := result["chain"].(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("invalid asset data structure")
+	}
+
+	chainID, ok := chain["chain_id"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing chain_id")
 	}
 
 	assets, ok := chain["assets"].([]interface{})
@@ -146,18 +46,36 @@ func buildTokenMapping(assetData map[string]interface{}) (*TokenMapping, error) 
 		return nil, fmt.Errorf("invalid assets structure")
 	}
 
+	tokens := make(map[string]ChainTokenInfo)
 	for _, asset := range assets {
 		assetMap := asset.(map[string]interface{})
-		denom := assetMap["denom"].(string)
 
-		if decimals, ok := assetMap["decimals"].(float64); ok {
-			mapping.ExponentMap[denom] = int(decimals)
+		denom, ok := assetMap["denom"].(string)
+		if !ok {
+			continue
+		}
+
+		token := ChainTokenInfo{
+			Denom: denom,
 		}
 
 		if symbol, ok := assetMap["symbol"].(string); ok {
-			mapping.DisplayNameMap[denom] = symbol
+			token.Display = symbol
 		}
+
+		if decimals, ok := assetMap["decimals"].(float64); ok {
+			token.Decimals = int(decimals)
+		}
+
+		if coingeckoID, ok := assetMap["coingecko_id"].(string); ok {
+			token.CoingeckoID = coingeckoID
+		}
+
+		tokens[denom] = token
 	}
 
-	return mapping, nil
+	return &ChainInfo{
+		ChainID: chainID,
+		Tokens:  tokens,
+	}, nil
 }

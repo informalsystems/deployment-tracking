@@ -13,6 +13,25 @@ const (
 
 // Core data structures
 
+type ChainTokenInfo struct {
+	Denom       string `json:"denom"`
+	Display     string `json:"display"`
+	Decimals    int    `json:"decimals"`
+	CoingeckoID string `json:"coingecko_id"`
+}
+
+type ChainInfo struct {
+	ChainID string                    `json:"chain_id"`
+	Tokens  map[string]ChainTokenInfo `json:"tokens"` // denom -> info
+}
+
+func (c *ChainInfo) GetTokenInfo(denom string) (*ChainTokenInfo, error) {
+	if info, ok := c.Tokens[denom]; ok {
+		return &info, nil
+	}
+	return nil, fmt.Errorf("token info not found for denom: %s", denom)
+}
+
 // PositionConfig holds the configuration for
 // a single bid position.
 // It contains the protocol the position is on,
@@ -56,9 +75,9 @@ type VenueHoldings struct {
 
 // Protocol interface
 type DexProtocol interface {
-	ComputeTVL(assetData map[string]interface{}) (*Holdings, error)
-	ComputeAddressPrincipalHoldings(assetData map[string]interface{}, address string) (*Holdings, error)
-	ComputeAddressRewardHoldings(assetData map[string]interface{}, address string) (*Holdings, error)
+	ComputeTVL(assetData *ChainInfo) (*Holdings, error)
+	ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error)
+	ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error)
 }
 
 func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositionConfig) (DexProtocol, error) {
