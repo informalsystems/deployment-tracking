@@ -9,6 +9,7 @@ const (
 	Osmosis   Protocol = "osmosis"
 	Astroport Protocol = "astroport"
 	Nolus     Protocol = "nolus"
+	Mars      Protocol = "mars"
 )
 
 // Core data structures
@@ -86,6 +87,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositi
 		return NewOsmosisPosition(config, bidPositionConfig)
 	case Nolus:
 		return NewNolusPosition(config, bidPositionConfig)
+	case Mars:
+		return NewMarsPosition(config, bidPositionConfig)
 	}
 
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
@@ -102,6 +105,12 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		Protocol:          Nolus,
 		PoolInfoUrl:       "https://nolus-api.polkachu.com/cosmwasm/wasm/v1/contract",
 		AssetListURL:      "https://chains.cosmos.directory/nolus",
+		AddressBalanceUrl: "",
+	},
+	Mars: {
+		Protocol:          Mars,
+		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/neutron",
 		AddressBalanceUrl: "",
 	},
 }
@@ -132,5 +141,13 @@ var bidMap = map[string]BidPositionConfig{
 		PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
 		PoolContractToken:   NOLUS_ATOM,
 		Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	},
+	"16": MarsBidPositionConfig{
+		CreditAccountID: "2533",
+		DepositedDenom:  NEUTRON_ATOM,
+	},
+	"24.mars": MarsBidPositionConfig{
+		CreditAccountID: "3091",
+		DepositedDenom:  NEUTRON_ATOM,
 	},
 }
