@@ -49,29 +49,27 @@ type SkipResponse struct {
 // Global price cache
 var (
 	pricesInitialized bool = false
-	priceCache             = make(map[string]PriceInfo)
+	priceCache        *PriceCache
 	skipCache         *SkipCache
 )
 
 const PriceCacheTTL = 30 * time.Minute
-
-type PriceInfo struct {
-	Price     float64
-	Timestamp time.Time
-}
 
 type SkipCache struct {
 	Assets    map[string]map[string]SkipAsset
 	Timestamp time.Time
 }
 
+type PriceCache struct {
+	Prices    map[string]float64
+	Timestamp time.Time
+}
+
 // Fetch all prices in one call
 func initializePriceCache() error {
 	if pricesInitialized {
-		for _, info := range priceCache {
-			if time.Since(info.Timestamp) < PriceCacheTTL {
-				return nil
-			}
+		if time.Since(priceCache.Timestamp) < PriceCacheTTL {
+			return nil
 		}
 	}
 
@@ -114,19 +112,22 @@ func initializePriceCache() error {
 	}
 
 	// Cache all prices
+	prices := make(map[string]float64)
 	now := time.Now()
 	for coinID, priceData := range result {
 		if usdPrice, ok := priceData["usd"]; ok {
-			priceCache[coinID] = PriceInfo{
-				Price:     usdPrice,
-				Timestamp: now,
-			}
+			prices[coinID] = usdPrice
 		}
+	}
+
+	priceCache = &PriceCache{
+		Prices:    prices,
+		Timestamp: now,
 	}
 
 	pricesInitialized = true
 	debugLog("Price cache initialized", map[string]interface{}{
-		"prices_cached": len(priceCache),
+		"prices_cached": len(priceCache.Prices),
 		"timestamp":     now,
 	})
 	return nil
@@ -165,11 +166,6 @@ func fetchSkipAssets() error {
 		Timestamp: time.Now(),
 	}
 
-	// Initialize price cache
-	if err := initializePriceCache(); err != nil {
-		return fmt.Errorf("initializing price cache: %v", err)
-	}
-
 	return nil
 }
 
@@ -178,21 +174,15 @@ func getTokenPrice(coingeckoId string) (float64, error) {
 		"token": coingeckoId,
 	})
 
-	// Check cache
-	if info, ok := priceCache[coingeckoId]; ok {
-		if time.Since(info.Timestamp) < PriceCacheTTL {
-			return info.Price, nil
-		}
-	}
-
-	// Cache expired or missing, refresh all prices
+	// initialize the price cache (will be a no-op if the cache was already initialized
+	// and not expired yet)
 	if err := initializePriceCache(); err != nil {
 		return 0, fmt.Errorf("refreshing price cache: %v", err)
 	}
 
 	// Try cache again after refresh
-	if info, ok := priceCache[coingeckoId]; ok {
-		return info.Price, nil
+	if price, ok := priceCache.Prices[coingeckoId]; ok {
+		return price, nil
 	}
 
 	return 0, fmt.Errorf("no price found for token: %s", coingeckoId)
@@ -204,7 +194,7 @@ func getAtomPrice() (float64, error) {
 
 // Initialize caches in main
 func init() {
-	if err := fetchSkipAssets(); err != nil {
+	if err := initializePriceCache(); err != nil {
 		log.Printf("Warning: Failed to fetch Skip assets: %v", err)
 	}
 }
