@@ -6,10 +6,12 @@ import "fmt"
 type Protocol string
 
 const (
-	Osmosis   Protocol = "osmosis"
-	Astroport Protocol = "astroport"
-	Nolus     Protocol = "nolus"
-	Mars      Protocol = "mars"
+	Osmosis          Protocol = "osmosis"
+	Astroport        Protocol = "astroport"
+	Nolus            Protocol = "nolus"
+	Mars             Protocol = "mars"
+	AstroportNeutron Protocol = "astroport-neutron"
+	AstroportTerra   Protocol = "astroport-terra"
 )
 
 // Core data structures
@@ -89,6 +91,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositi
 		return NewNolusPosition(config, bidPositionConfig)
 	case Mars:
 		return NewMarsPosition(config, bidPositionConfig)
+	case AstroportNeutron, AstroportTerra:
+		return NewAstroportPosition(config, bidPositionConfig)
 	}
 
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
@@ -113,6 +117,18 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		AssetListURL:      "https://chains.cosmos.directory/neutron",
 		AddressBalanceUrl: "",
 	},
+	AstroportNeutron: {
+		Protocol:          AstroportNeutron,
+		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/neutron",
+		AddressBalanceUrl: "https://neutron-api.polkachu.com/cosmos/bank/v1beta1/balances",
+	},
+	AstroportTerra: {
+		Protocol:          AstroportTerra,
+		PoolInfoUrl:       "https://terra-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/terra",
+		AddressBalanceUrl: "https://terra-api.polkachu.com/cosmos/bank/v1beta1/balances",
+	},
 }
 
 // map of bid id to protocol and pool id, position id, address
@@ -131,6 +147,12 @@ var bidMap = map[string]BidPositionConfig{
 		PoolID:     "2371",
 		Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 		PositionID: "11124249",
+	},
+	"11.astroport": AstroportBidPositionConfig{
+		ChainID:          "neutron-1",
+		PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+		IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+		Address:          "neutron14fmxw54lgvheyn7m0p9efpr82fac68ysph96ch",
 	},
 	"5": NolusBidPositionConfig{
 		PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",

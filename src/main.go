@@ -14,7 +14,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = "11.osmosis"
+	BidId = "11.astroport"
 )
 
 // Global cache instance (cache duration: 30 minutes)

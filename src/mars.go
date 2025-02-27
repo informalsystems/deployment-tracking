@@ -104,7 +104,7 @@ func (p MarsPosition) getTotalDepositInPool() (int, error) {
 		return 0, err
 	}
 
-	amountStr, ok := data["amount"].(string)
+	amountStr, ok := (data.(map[string]interface{}))["amount"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid pool total deposit")
 	}
@@ -124,7 +124,7 @@ func (p MarsPosition) getCreditAccountDepositInPool() (int, error) {
 		return 0, err
 	}
 
-	lends, ok := data["lends"].([]interface{})
+	lends, ok := (data.(map[string]interface{}))["lends"].([]interface{})
 	if !ok {
 		return 0, fmt.Errorf("invalid credit account lend positions")
 	}
