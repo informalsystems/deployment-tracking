@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -28,6 +29,11 @@ func computeHoldings(bidId string) (*VenueHoldings, error) {
 	bidConfig, ok := bidMap[bidId]
 	if !ok {
 		return nil, fmt.Errorf("bid not found: %s", bidId)
+	}
+
+	// if there is a result not older than 30 minutes, return it
+	if cached, found := resultCache.Get(bidId); found {
+		return cached.(*VenueHoldings), nil
 	}
 
 	// get the protocol config
@@ -65,6 +71,9 @@ func computeHoldings(bidId string) (*VenueHoldings, error) {
 		AddressRewards:   *rewardHoldings,
 	}
 
+	// Cache the JSON result for 30 minutes.
+	resultCache.Set(bidId, &venueHoldings, cache.DefaultExpiration)
+
 	return &venueHoldings, nil
 }
 
@@ -74,15 +83,36 @@ func computeHoldings(bidId string) (*VenueHoldings, error) {
 // It first checks the cache and, if a valid cached result exists,
 // returns that. Otherwise, it computes the result, caches it for 30 minutes, and returns it.
 func holdingsHandler(w http.ResponseWriter, r *http.Request) {
-	// Check if cached result exists.
-	if cached, found := resultCache.Get("holdings"); found {
+	bidId := mux.Vars(r)["bid_id"]
+
+	// If no Bid ID is provided, return holdings of all bids
+	if bidId == "" {
+		allHoldings := make([]BidHoldings, 0, len(bidMap))
+
+		for bidId := range bidMap {
+			holdings, err := computeHoldings(bidId)
+			if err != nil {
+				debugLog(fmt.Sprintf("failed to compute holdings for bid ID: %s", bidId), nil)
+				holdings = nil
+			}
+
+			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, Holdings: holdings})
+		}
+
+		jsonData, err := json.MarshalIndent(allHoldings, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(cached.([]byte))
+		w.Write(jsonData)
+
 		return
 	}
 
 	// Compute holdings.
-	holdings, err := computeHoldings(BidId)
+	holdings, err := computeHoldings(bidId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,9 +124,6 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	// Cache the JSON result for 30 minutes.
-	resultCache.Set("holdings", jsonData, cache.DefaultExpiration)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonData)
@@ -126,13 +153,16 @@ func main() {
 	// Initialize the in-memory cache with a 30-minute expiration and a 10-minute cleanup interval.
 	resultCache = cache.New(30*time.Minute, 10*time.Minute)
 
-	// Register the holdings endpoint.
-	http.HandleFunc("/holdings", holdingsHandler)
+	router := mux.NewRouter()
+
+	// Register the holdings endpoints.
+	router.HandleFunc("/holdings/", holdingsHandler)
+	router.HandleFunc("/holdings/{bid_id}", holdingsHandler)
 
 	// Start the HTTP server.
 	port := ":8080"
 	log.Printf("Server is running on port %s", port)
-	if err := http.ListenAndServe(port, nil); err != nil {
+	if err := http.ListenAndServe(port, router); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }
