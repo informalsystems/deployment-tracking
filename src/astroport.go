@@ -85,7 +85,8 @@ func (p AstroportPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 		adjustedAmount := float64(amount) / math.Pow(10, float64(tokenInfo.Decimals))
 		usdValue, atomValue, err := getTokenValues(adjustedAmount, *tokenInfo)
 		if err != nil {
-			return nil, fmt.Errorf("computing token values: %s", err)
+			debugLog("Error getting token values", map[string]string{"denom": denom})
+			continue
 		}
 
 		totalValueUSD += usdValue
@@ -157,7 +158,8 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo,
 		adjustedAmount := float64(amount) / math.Pow(10, float64(tokenInfo.Decimals))
 		usdValue, atomValue, err := getTokenValues(adjustedAmount, *tokenInfo)
 		if err != nil {
-			return nil, fmt.Errorf("computing token values: %s", err)
+			debugLog("Error getting token values", map[string]string{"denom": denom})
+			continue
 		}
 
 		totalValueUSD += usdValue
@@ -242,7 +244,8 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, ad
 		adjustedAmount := float64(amount) / math.Pow(10, float64(tokenInfo.Decimals))
 		usdValue, atomValue, err := getTokenValues(adjustedAmount, *tokenInfo)
 		if err != nil {
-			return nil, fmt.Errorf("computing token values: %s", err)
+			debugLog("Error getting token values", map[string]string{"denom": denom})
+			continue
 		}
 
 		totalValueUSD += usdValue
@@ -264,10 +267,10 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, ad
 }
 
 func (p AstroportPosition) getTotalLPAmount(address string, lpToken string) (int64, error) {
-	// Query wallet balance
-	balanceURL := fmt.Sprintf("%s/%s",
-		p.protocolConfig.AddressBalanceUrl, address)
+	walletBalance := int64(0)
 
+	// First try native token query
+	balanceURL := fmt.Sprintf("%s/%s", p.protocolConfig.AddressBalanceUrl, address)
 	var balanceResponse struct {
 		Balances []struct {
 			Denom  string `json:"denom"`
@@ -279,12 +282,33 @@ func (p AstroportPosition) getTotalLPAmount(address string, lpToken string) (int
 		return 0, fmt.Errorf("querying balance: %s", err)
 	}
 
-	walletBalance := int64(0)
+	// Try to find as native token
 	for _, bal := range balanceResponse.Balances {
 		if bal.Denom == lpToken {
 			walletBalance, _ = strconv.ParseInt(bal.Amount, 10, 64)
 			break
 		}
+	}
+
+	// If not found in native tokens, try as CW20
+	if walletBalance == 0 {
+		balanceQuery := map[string]interface{}{
+			"balance": map[string]interface{}{
+				"address": address,
+			},
+		}
+
+		balanceData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
+			lpToken, balanceQuery)
+		if err == nil { // Only process if query succeeds
+			balanceResponse, ok := balanceData.(map[string]interface{})
+			if ok {
+				if balanceStr, ok := balanceResponse["balance"].(string); ok {
+					walletBalance, _ = strconv.ParseInt(balanceStr, 10, 64)
+				}
+			}
+		}
+		// Ignore errors as the token might not be a CW20 either
 	}
 
 	// Query staked balance
