@@ -76,6 +76,11 @@ type VenueHoldings struct {
 	AddressRewards   Holdings `json:"address_rewards"`
 }
 
+type BidHoldings struct {
+	BidId    string         `json:"bid_id"`
+	Holdings *VenueHoldings `json:"holdings"`
+}
+
 // Protocol interface
 type DexProtocol interface {
 	ComputeTVL(assetData *ChainInfo) (*Holdings, error)
