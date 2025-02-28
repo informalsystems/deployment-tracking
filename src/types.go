@@ -126,7 +126,7 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	AstroportTerra: {
 		Protocol:          AstroportTerra,
 		PoolInfoUrl:       "https://terra-api.polkachu.com/cosmwasm/wasm/v1/contract",
-		AssetListURL:      "https://chains.cosmos.directory/terra",
+		AssetListURL:      "https://chains.cosmos.directory/terra2",
 		AddressBalanceUrl: "https://terra-api.polkachu.com/cosmos/bank/v1beta1/balances",
 	},
 }
@@ -171,5 +171,17 @@ var bidMap = map[string]BidPositionConfig{
 	"24.mars": MarsBidPositionConfig{
 		CreditAccountID: "3091",
 		DepositedDenom:  NEUTRON_ATOM,
+	},
+	"7.statom": AstroportBidPositionConfig{
+		ChainID:          "phoenix-1",
+		PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+	},
+	"7.datom": AstroportBidPositionConfig{
+		ChainID:          "phoenix-1",
+		PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
 	},
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 )
 
 type AstroportBidPositionConfig struct {
@@ -122,10 +123,10 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo,
 		return nil, fmt.Errorf("getting total LP amount: %s", err)
 	}
 
-	// Simulate withdrawal to get underlying assets
+	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{
-		"simulate_withdraw": map[string]interface{}{
-			"lp_amount": strconv.FormatInt(totalLPAmount, 10),
+		"share": map[string]interface{}{
+			"amount": strconv.FormatInt(totalLPAmount, 10),
 		},
 	}
 
@@ -209,6 +210,14 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, ad
 	rewardsData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
 		p.bidPositionConfig.IncentiveAddress, rewardsQuery)
 	if err != nil {
+		// Check if error is "user doesn't have position"
+		if strings.Contains(err.Error(), "doesn't have position") {
+			return &Holdings{
+				Balances:  []Asset{},
+				TotalUSDC: 0,
+				TotalAtom: 0,
+			}, nil
+		}
 		return nil, fmt.Errorf("querying rewards: %s", err)
 	}
 

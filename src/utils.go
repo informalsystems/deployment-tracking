@@ -76,10 +76,37 @@ func fetchAssetList(assetListUrl string) (*ChainInfo, error) {
 		tokens[denom] = token
 	}
 
+	// supplement with the skip token list
+	err = fetchSkipAssets()
+	if err != nil {
+		// if the skip assets couldn't be fetched, log an error, but continue
+		debugLog("Failed to fetch skip assets", map[string]string{"error": err.Error()})
+	}
+
+	skipAssets := skipCache.Assets[chainID]
+	for denom, asset := range skipAssets {
+		debugLog("Adding skip asset", map[string]string{"denom": denom})
+		if _, ok := tokens[denom]; !ok {
+			tokens[denom] = ChainTokenInfo{
+				Denom:       denom,
+				Display:     asset.RecommendedSymbol,
+				Decimals:    asset.Decimals,
+				CoingeckoID: asset.CoingeckoID,
+			}
+		}
+	}
+
 	return &ChainInfo{
 		ChainID: chainID,
 		Tokens:  tokens,
 	}, nil
+}
+
+// A type to parse error responses
+type WasmError struct {
+	Code    int      `json:"code"`
+	Message string   `json:"message"`
+	Details []string `json:"details"`
 }
 
 func QuerySmartContractData(nodeUrl string, contractAddress string,
@@ -108,6 +135,12 @@ func QuerySmartContractData(nodeUrl string, contractAddress string,
 			"status_code": resp.StatusCode,
 			"response":    string(body),
 		})
+
+		// Try to parse error message
+		var wasmErr WasmError
+		if err := json.Unmarshal(body, &wasmErr); err == nil {
+			return nil, fmt.Errorf("error fetching smart contract data - wasm error response: %v", wasmErr.Message)
+		}
 		return nil, fmt.Errorf("fetching smart contract data: %d", resp.StatusCode)
 	}
 
