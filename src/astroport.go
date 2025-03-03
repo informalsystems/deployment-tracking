@@ -11,18 +11,11 @@ type AstroportBidPositionConfig struct {
 	PoolAddress      string // Contract address of the pool
 	Address          string
 	IncentiveAddress string
-	ChainID          string
+	Protocol         Protocol
 }
 
 func (bidConfig AstroportBidPositionConfig) GetProtocol() Protocol {
-	if bidConfig.ChainID == "neutron-1" {
-		return AstroportNeutron
-	} else if bidConfig.ChainID == "phoenix-1" {
-		return AstroportTerra
-	} else {
-		debugLog("Unknown chain ID in bid config, defaulting to Astroport on Neutron", map[string]string{"chain_id": bidConfig.ChainID})
-		return AstroportNeutron
-	}
+	return bidConfig.Protocol
 }
 
 func (bidConfig AstroportBidPositionConfig) GetPoolID() string {
@@ -98,10 +91,6 @@ func (p AstroportPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 			USDValue:    usdValue,
 			DisplayName: tokenInfo.Display,
 		})
-	}
-
-	if err != nil {
-		return nil, fmt.Errorf("getting ATOM price: %s", err)
 	}
 
 	return &Holdings{
