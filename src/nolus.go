@@ -108,12 +108,14 @@ func (p NolusPosition) getShareToTokenRatio() (float64, error) {
 		return 0, err
 	}
 
-	amountStr, ok := data["amount"].(map[string]interface{})["amount"].(string)
+	contractData := data.(map[string]interface{})
+
+	amountStr, ok := contractData["amount"].(map[string]interface{})["amount"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid pool balance structure")
 	}
 
-	amountQuoteStr, ok := data["amount_quote"].(map[string]interface{})["amount"].(string)
+	amountQuoteStr, ok := contractData["amount_quote"].(map[string]interface{})["amount"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid pool balance structure")
 	}
@@ -141,7 +143,7 @@ func (p NolusPosition) getTotalPoolShares() (int, error) {
 		return 0, err
 	}
 
-	balanceShares, ok := data["balance_nlpn"].(map[string]interface{})["amount"].(string)
+	balanceShares, ok := data.(map[string]interface{})["balance_nlpn"].(map[string]interface{})["amount"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid balance_nlpn")
 	}
@@ -162,7 +164,7 @@ func (p NolusPosition) getAddressBalanceShares(address string) (int, error) {
 		return 0, err
 	}
 
-	balanceShares, ok := data["balance"].(string)
+	balanceShares, ok := data.(map[string]interface{})["balance"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid balance")
 	}
@@ -183,7 +185,7 @@ func (p NolusPosition) getAddressRewardsShares(address string) (int, error) {
 		return 0, err
 	}
 
-	addressRewardsShares, ok := data["rewards"].(map[string]interface{})["amount"].(string)
+	addressRewardsShares, ok := data.(map[string]interface{})["rewards"].(map[string]interface{})["amount"].(string)
 	if !ok {
 		return 0, fmt.Errorf("invalid balance")
 	}

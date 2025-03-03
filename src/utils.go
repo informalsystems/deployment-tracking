@@ -76,21 +76,51 @@ func fetchAssetList(assetListUrl string) (*ChainInfo, error) {
 		tokens[denom] = token
 	}
 
+	// supplement with the skip token list
+	err = fetchSkipAssets()
+	if err != nil {
+		// if the skip assets couldn't be fetched, log an error, but continue
+		debugLog("Failed to fetch skip assets", map[string]string{"error": err.Error()})
+	}
+
+	skipAssets := skipCache.Assets[chainID]
+	for denom, asset := range skipAssets {
+		debugLog("Adding skip asset", map[string]string{"denom": denom})
+		if _, ok := tokens[denom]; !ok {
+			tokens[denom] = ChainTokenInfo{
+				Denom:       denom,
+				Display:     asset.RecommendedSymbol,
+				Decimals:    asset.Decimals,
+				CoingeckoID: asset.CoingeckoID,
+			}
+		}
+	}
+
 	return &ChainInfo{
 		ChainID: chainID,
 		Tokens:  tokens,
 	}, nil
 }
 
+// A type to parse error responses
+type WasmError struct {
+	Code    int      `json:"code"`
+	Message string   `json:"message"`
+	Details []string `json:"details"`
+}
+
 func QuerySmartContractData(nodeUrl string, contractAddress string,
-	query map[string]interface{}) (map[string]interface{}, error) {
+	query map[string]interface{},
+) (interface{}, error) {
+	debugLog("Querying smart contract data", query)
 	queryJson, err := json.Marshal(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal query into JSON: %s", err.Error())
 	}
 
 	queryEncoded := base64.StdEncoding.EncodeToString([]byte(queryJson))
-	url := fmt.Sprintf("%s/%s/smart/%s", nodeUrl, contractAddress, string(queryEncoded))
+	url := fmt.Sprintf("%s/%s/smart/%s",
+		nodeUrl, contractAddress, string(queryEncoded))
 	debugLog("Fetching data from smart contract", map[string]string{"url": url})
 
 	resp, err := http.Get(url)
@@ -105,19 +135,61 @@ func QuerySmartContractData(nodeUrl string, contractAddress string,
 			"status_code": resp.StatusCode,
 			"response":    string(body),
 		})
+
+		// Try to parse error message
+		var wasmErr WasmError
+		if err := json.Unmarshal(body, &wasmErr); err == nil {
+			return nil, fmt.Errorf("error fetching smart contract data - wasm error response: %v", wasmErr.Message)
+		}
 		return nil, fmt.Errorf("fetching smart contract data: %d", resp.StatusCode)
 	}
 
-	var response map[string]interface{}
+	var response struct {
+		Data interface{} `json:"data"`
+	}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		return nil, fmt.Errorf("decoding smart contract data: %v", err)
 	}
 
 	debugLog("contract response", response)
 
-	if len(response) == 0 {
+	if response.Data == nil {
 		return nil, fmt.Errorf("smart contract returned no data")
 	}
 
-	return response["data"].(map[string]interface{}), nil
+	return response.Data, nil
+}
+
+func getJSON(url string, target interface{}) error {
+	debugLog("Fetching JSON data", map[string]string{"url": url})
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("making HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		debugLog("Failed to fetch JSON data", map[string]interface{}{
+			"status_code": resp.StatusCode,
+			"response":    string(body),
+		})
+		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("reading response body: %v", err)
+	}
+
+	debugLog("Received JSON response", map[string]string{
+		"body": string(body),
+	})
+
+	if err := json.Unmarshal(body, target); err != nil {
+		return fmt.Errorf("decoding JSON response: %v", err)
+	}
+
+	return nil
 }

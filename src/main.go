@@ -15,7 +15,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = "11.osmosis"
+	BidId = "7.datom"
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -136,6 +136,9 @@ func main() {
 	debug := flag.Bool("debug", false, "Run the endpoint once for testing")
 	flag.Parse()
 
+	// Initialize the in-memory cache with a 30-minute expiration and a 10-minute cleanup interval.
+	resultCache = cache.New(30*time.Minute, 10*time.Minute)
+
 	// If the --debug flag is provided, run the endpoint logic once and exit.
 	if *debug {
 		holdings, err := computeHoldings(BidId)
@@ -149,9 +152,6 @@ func main() {
 		fmt.Println(string(jsonData))
 		return
 	}
-
-	// Initialize the in-memory cache with a 30-minute expiration and a 10-minute cleanup interval.
-	resultCache = cache.New(30*time.Minute, 10*time.Minute)
 
 	router := mux.NewRouter()
 
