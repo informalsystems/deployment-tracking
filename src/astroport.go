@@ -7,39 +7,39 @@ import (
 	"strings"
 )
 
-type AstroportBidPositionConfig struct {
+type AstroportVenuePositionConfig struct {
 	PoolAddress      string // Contract address of the pool
 	Address          string
 	IncentiveAddress string
 	Protocol         Protocol
 }
 
-func (bidConfig AstroportBidPositionConfig) GetProtocol() Protocol {
-	return bidConfig.Protocol
+func (venueConfig AstroportVenuePositionConfig) GetProtocol() Protocol {
+	return venueConfig.Protocol
 }
 
-func (bidConfig AstroportBidPositionConfig) GetPoolID() string {
-	return bidConfig.PoolAddress
+func (venueConfig AstroportVenuePositionConfig) GetPoolID() string {
+	return venueConfig.PoolAddress
 }
 
-func (bidConfig AstroportBidPositionConfig) GetAddress() string {
-	return bidConfig.Address
+func (venueConfig AstroportVenuePositionConfig) GetAddress() string {
+	return venueConfig.Address
 }
 
 type AstroportPosition struct {
-	protocolConfig    ProtocolConfig
-	bidPositionConfig AstroportBidPositionConfig
+	protocolConfig      ProtocolConfig
+	venuePositionConfig AstroportVenuePositionConfig
 }
 
-func NewAstroportPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*AstroportPosition, error) {
-	astroportBidPositionConfig, ok := bidPositionConfig.(AstroportBidPositionConfig)
+func NewAstroportPosition(config ProtocolConfig, venuePositionConfig VenuePositionConfig) (*AstroportPosition, error) {
+	astroportVenuePositionConfig, ok := venuePositionConfig.(AstroportVenuePositionConfig)
 	if !ok {
-		return nil, fmt.Errorf("bidPositionConfig must be of AstroportBidPositionConfig type")
+		return nil, fmt.Errorf("venuePositionConfig must be of AstroportVenuePositionConfig type")
 	}
 
 	return &AstroportPosition{
-		protocolConfig:    config,
-		bidPositionConfig: astroportBidPositionConfig,
+		protocolConfig:      config,
+		venuePositionConfig: astroportVenuePositionConfig,
 	}, nil
 }
 
@@ -50,7 +50,7 @@ func (p AstroportPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	}
 
 	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.bidPositionConfig.PoolAddress, queryMsg)
+		p.venuePositionConfig.PoolAddress, queryMsg)
 	if err != nil {
 		return nil, fmt.Errorf("querying pool data: %s", err)
 	}
@@ -121,7 +121,7 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo,
 	}
 
 	withdrawData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.bidPositionConfig.PoolAddress, withdrawQuery)
+		p.venuePositionConfig.PoolAddress, withdrawQuery)
 	if err != nil {
 		return nil, fmt.Errorf("simulating withdrawal: %s", err)
 	}
@@ -175,7 +175,7 @@ func GetLPToken(p AstroportPosition) (string, error) {
 	}
 
 	pairData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.bidPositionConfig.PoolAddress, pairQuery)
+		p.venuePositionConfig.PoolAddress, pairQuery)
 	if err != nil {
 		return "", fmt.Errorf("querying pair info: %s", err)
 	}
@@ -199,7 +199,7 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, ad
 	}
 
 	rewardsData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.bidPositionConfig.IncentiveAddress, rewardsQuery)
+		p.venuePositionConfig.IncentiveAddress, rewardsQuery)
 	if err != nil {
 		// Check if error is "user doesn't have position"
 		if strings.Contains(err.Error(), "doesn't have position") {
@@ -309,7 +309,7 @@ func (p AstroportPosition) getTotalLPAmount(address string, lpToken string) (int
 	}
 
 	stakedData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.bidPositionConfig.IncentiveAddress, stakedQuery)
+		p.venuePositionConfig.IncentiveAddress, stakedQuery)
 	if err != nil {
 		return 0, fmt.Errorf("querying staked balance: %s", err)
 	}

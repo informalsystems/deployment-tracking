@@ -34,13 +34,19 @@ func (c *ChainInfo) GetTokenInfo(denom string) (*ChainTokenInfo, error) {
 	return nil, fmt.Errorf("token info not found for denom: %s", denom)
 }
 
-// PositionConfig holds the configuration for
-// a single bid position.
+// BidPositionConfig holds configuration for all venue positions of the given bid.
+type BidPositionConfig struct {
+	InitialAtomDeposit int
+	Venues             []VenuePositionConfig
+}
+
+// VenuePositionConfig holds the configuration for
+// a single venue position.
 // It contains the protocol the position is on,
 // as well as all the information to identify a
-// concrete position, namely the pool ID,
-// address the position is associated with, and position ID.
-type BidPositionConfig interface {
+// concrete position, namely the pool ID and
+// address the position is associated with.
+type VenuePositionConfig interface {
 	GetPoolID() string
 	GetAddress() string
 	GetProtocol() Protocol
@@ -76,8 +82,8 @@ type VenueHoldings struct {
 }
 
 type BidHoldings struct {
-	BidId    string         `json:"bid_id"`
-	Holdings *VenueHoldings `json:"holdings"`
+	BidId    int             `json:"bid_id"`
+	Holdings []VenueHoldings `json:"holdings"`
 }
 
 // Protocol interface
@@ -87,16 +93,16 @@ type DexProtocol interface {
 	ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error)
 }
 
-func NewDexProtocolFromConfig(config ProtocolConfig, bidPositionConfig BidPositionConfig) (DexProtocol, error) {
+func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePositionConfig) (DexProtocol, error) {
 	switch config.Protocol {
 	case Osmosis:
-		return NewOsmosisPosition(config, bidPositionConfig)
+		return NewOsmosisPosition(config, venuePositionConfig)
 	case Nolus:
-		return NewNolusPosition(config, bidPositionConfig)
+		return NewNolusPosition(config, venuePositionConfig)
 	case Mars:
-		return NewMarsPosition(config, bidPositionConfig)
+		return NewMarsPosition(config, venuePositionConfig)
 	case AstroportNeutron, AstroportTerra:
-		return NewAstroportPosition(config, bidPositionConfig)
+		return NewAstroportPosition(config, venuePositionConfig)
 	}
 
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
@@ -135,69 +141,100 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	},
 }
 
-// map of bid id to protocol and pool id, position id, address
-var bidMap = map[string]BidPositionConfig{
-	"18": OsmosisBidPositionConfig{
-		PoolID:     "1283",
-		Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-		PositionID: "11701290",
+// map of bid ID to its position config
+var bidMap = map[int]BidPositionConfig{
+	17: {
+		InitialAtomDeposit: 48650,
+		Venues: []VenuePositionConfig{OsmosisVenuePositionConfig{
+			PoolID:     "1283",
+			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+			PositionID: "11124334",
+		}},
 	},
-	"17": OsmosisBidPositionConfig{
-		PoolID:     "1283",
-		Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-		PositionID: "11124334",
+	18: {
+		InitialAtomDeposit: 45000,
+		Venues: []VenuePositionConfig{OsmosisVenuePositionConfig{
+			PoolID:     "1283",
+			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+			PositionID: "11701290",
+		}},
 	},
-	"11.osmosis": OsmosisBidPositionConfig{
-		PoolID:     "2371",
-		Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-		PositionID: "11124249",
+	11: {
+		InitialAtomDeposit: 81000,
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "2371",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "11124249",
+			},
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+			}},
 	},
-	"11.astroport": AstroportBidPositionConfig{
-		Protocol:         AstroportNeutron,
-		PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
-		IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-		Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	5: {
+		InitialAtomDeposit: 10000,
+		Venues: []VenuePositionConfig{NolusVenuePositionConfig{
+			PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
+			PoolContractToken:   NOLUS_ST_ATOM,
+			Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+		}},
 	},
-	"5": NolusBidPositionConfig{
-		PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
-		PoolContractToken:   NOLUS_ST_ATOM,
-		Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	23: {
+		InitialAtomDeposit: 22340,
+		Venues: []VenuePositionConfig{NolusVenuePositionConfig{
+			PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
+			PoolContractToken:   NOLUS_ATOM,
+			Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+		}},
 	},
-	"23": NolusBidPositionConfig{
-		PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
-		PoolContractToken:   NOLUS_ATOM,
-		Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	16: {
+		InitialAtomDeposit: 42000,
+		Venues: []VenuePositionConfig{MarsVenuePositionConfig{
+			CreditAccountID: "2533",
+			DepositedDenom:  NEUTRON_ATOM,
+		}},
 	},
-	"16": MarsBidPositionConfig{
-		CreditAccountID: "2533",
-		DepositedDenom:  NEUTRON_ATOM,
+	24: {
+		InitialAtomDeposit: 21981, // TODO: add other venues
+		Venues: []VenuePositionConfig{MarsVenuePositionConfig{
+			// 21981 to Mars Protocol
+			CreditAccountID: "3091",
+			DepositedDenom:  NEUTRON_ATOM,
+		}},
 	},
-	"24.mars": MarsBidPositionConfig{
-		CreditAccountID: "3091",
-		DepositedDenom:  NEUTRON_ATOM,
+	7: {
+		InitialAtomDeposit: 17912,
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportTerra,
+				PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+			},
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportTerra,
+				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+			}},
 	},
-	"7.statom": AstroportBidPositionConfig{
-		Protocol:         AstroportTerra,
-		PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
-		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-	},
-	"7.datom": AstroportBidPositionConfig{
-		Protocol:         AstroportTerra,
-		PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
-		IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-		Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-	},
-	"22.datom": AstroportBidPositionConfig{
-		Protocol:         AstroportNeutron,
-		PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
-		IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-		Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	},
-	"22.statom": AstroportBidPositionConfig{
-		Protocol:         AstroportNeutron,
-		PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
-		IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-		Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	22: {
+		InitialAtomDeposit: 10000,
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+			},
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+			}},
 	},
 }
