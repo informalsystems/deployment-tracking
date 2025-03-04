@@ -11,41 +11,41 @@ import (
 
 const OsmosisAPIURL = "https://sqs.osmosis.zone"
 
-type OsmosisBidPositionConfig struct {
+type OsmosisVenuePositionConfig struct {
 	PoolID     string
 	Address    string
 	PositionID string
 }
 
-func (bidConfig OsmosisBidPositionConfig) GetProtocol() Protocol {
+func (venueConfig OsmosisVenuePositionConfig) GetProtocol() Protocol {
 	return Osmosis
 }
 
-func (bidConfig OsmosisBidPositionConfig) GetPoolID() string {
-	return bidConfig.PoolID
+func (venueConfig OsmosisVenuePositionConfig) GetPoolID() string {
+	return venueConfig.PoolID
 }
 
-func (bidConfig OsmosisBidPositionConfig) GetAddress() string {
-	return bidConfig.Address
+func (venueConfig OsmosisVenuePositionConfig) GetAddress() string {
+	return venueConfig.Address
 }
 
 // Osmosis implementation
 type OsmosisPosition struct {
-	protocolConfig    ProtocolConfig
-	bidPositionConfig OsmosisBidPositionConfig
+	protocolConfig      ProtocolConfig
+	venuePositionConfig OsmosisVenuePositionConfig
 }
 
-func NewOsmosisPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*OsmosisPosition, error) {
-	osmosisBidPositionConfig, ok := bidPositionConfig.(OsmosisBidPositionConfig)
+func NewOsmosisPosition(config ProtocolConfig, venuePositionConfig VenuePositionConfig) (*OsmosisPosition, error) {
+	osmosisVenuePositionConfig, ok := venuePositionConfig.(OsmosisVenuePositionConfig)
 	if !ok {
-		return nil, fmt.Errorf("bidPositionConfig must be of OsmosisBidPositionConfig type")
+		return nil, fmt.Errorf("venuePositionConfig must be of OsmosisVenuePositionConfig type")
 	}
 
-	return &OsmosisPosition{protocolConfig: config, bidPositionConfig: osmosisBidPositionConfig}, nil
+	return &OsmosisPosition{protocolConfig: config, venuePositionConfig: osmosisVenuePositionConfig}, nil
 }
 
 func (p OsmosisPosition) FetchPoolData() (map[string]interface{}, error) {
-	url := fmt.Sprintf("%s/pools?IDs=%s", p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolID)
+	url := fmt.Sprintf("%s/pools?IDs=%s", p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolID)
 	debugLog("Fetching pool data from Osmosis API", map[string]string{"url": url})
 
 	resp, err := http.Get(url)
@@ -229,14 +229,14 @@ func (p OsmosisPosition) processPositionBalances(positions []interface{}) (map[s
 		}
 
 		// Only process the position that matches our position ID
-		if posInfo["position_id"].(string) != p.bidPositionConfig.PositionID {
+		if posInfo["position_id"].(string) != p.venuePositionConfig.PositionID {
 			continue
 		}
 
 		// check that the pool id matches what we expect for the position
-		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.bidPositionConfig.PoolID {
+		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.venuePositionConfig.PoolID {
 			// return an error
-			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but expected %s", poolID, posInfo["position_id"].(string), p.bidPositionConfig.PoolID)
+			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but expected %s", poolID, posInfo["position_id"].(string), p.venuePositionConfig.PoolID)
 		}
 
 		assets := []map[string]interface{}{
@@ -272,14 +272,14 @@ func (p OsmosisPosition) processPositionRewards(positions []interface{}) (map[st
 		}
 
 		// Only process the position that matches our position ID
-		if posInfo["position_id"].(string) != p.bidPositionConfig.PositionID {
+		if posInfo["position_id"].(string) != p.venuePositionConfig.PositionID {
 			continue
 		}
 
 		// check that the pool id matches what we expect for the position
-		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.bidPositionConfig.PoolID {
+		if poolID, ok := posInfo["pool_id"].(string); !ok || poolID != p.venuePositionConfig.PoolID {
 			// return an error
-			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but bid config claims %s", poolID, posInfo["position_id"].(string), p.bidPositionConfig.PoolID)
+			return nil, fmt.Errorf("pool ID mismatch: found %s for position %s, but bid config claims %s", poolID, posInfo["position_id"].(string), p.venuePositionConfig.PoolID)
 		}
 
 		if spreadRewards, ok := position["claimable_spread_rewards"].([]interface{}); ok {

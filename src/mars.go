@@ -12,35 +12,35 @@ const (
 	PARAMS_CONTRACT_ADDRESS         = "neutron1x4rgd7ry23v2n49y7xdzje0743c5tgrnqrqsvwyya2h6m48tz4jqqex06x"
 )
 
-type MarsBidPositionConfig struct {
+type MarsVenuePositionConfig struct {
 	CreditAccountID string
 	DepositedDenom  string
 }
 
-func (bidConfig MarsBidPositionConfig) GetProtocol() Protocol {
+func (venueConfig MarsVenuePositionConfig) GetProtocol() Protocol {
 	return Mars
 }
 
-func (bidConfig MarsBidPositionConfig) GetPoolID() string {
+func (venueConfig MarsVenuePositionConfig) GetPoolID() string {
 	return CREDIT_MANAGER_CONTRACT_ADDRESS
 }
 
-func (bidConfig MarsBidPositionConfig) GetAddress() string {
-	return bidConfig.CreditAccountID
+func (venueConfig MarsVenuePositionConfig) GetAddress() string {
+	return venueConfig.CreditAccountID
 }
 
 type MarsPosition struct {
-	protocolConfig    ProtocolConfig
-	bidPositionConfig MarsBidPositionConfig
+	protocolConfig      ProtocolConfig
+	venuePositionConfig MarsVenuePositionConfig
 }
 
-func NewMarsPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*MarsPosition, error) {
-	marsBidPositionConfig, ok := bidPositionConfig.(MarsBidPositionConfig)
+func NewMarsPosition(config ProtocolConfig, venuePositionConfig VenuePositionConfig) (*MarsPosition, error) {
+	marsVenuePositionConfig, ok := venuePositionConfig.(MarsVenuePositionConfig)
 	if !ok {
-		return nil, fmt.Errorf("bidPositionConfig must be of MarsBidPositionConfig type")
+		return nil, fmt.Errorf("venuePositionConfig must be of MarsVenuePositionConfig type")
 	}
 
-	return &MarsPosition{protocolConfig: config, bidPositionConfig: marsBidPositionConfig}, nil
+	return &MarsPosition{protocolConfig: config, venuePositionConfig: marsVenuePositionConfig}, nil
 }
 
 func (p MarsPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
@@ -58,7 +58,7 @@ func (p MarsPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address
 }
 
 func (p MarsPosition) computeHoldings(assetData *ChainInfo, getTokenAmountFunc func() (int, error)) (*Holdings, error) {
-	poolToken := p.bidPositionConfig.DepositedDenom
+	poolToken := p.venuePositionConfig.DepositedDenom
 	tokenInfo, ok := assetData.Tokens[poolToken]
 	if !ok {
 		return nil, fmt.Errorf("token info not found for %s", poolToken)
@@ -96,7 +96,7 @@ func (p MarsPosition) getTotalDepositInPool() (int, error) {
 	queryJson := map[string]interface{}{
 		"total_deposit": struct {
 			Denom string `json:"denom"`
-		}{Denom: p.bidPositionConfig.DepositedDenom},
+		}{Denom: p.venuePositionConfig.DepositedDenom},
 	}
 
 	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, PARAMS_CONTRACT_ADDRESS, queryJson)
@@ -116,7 +116,7 @@ func (p MarsPosition) getCreditAccountDepositInPool() (int, error) {
 	queryJson := map[string]interface{}{
 		"positions": struct {
 			AccountID string `json:"account_id"`
-		}{AccountID: p.bidPositionConfig.CreditAccountID},
+		}{AccountID: p.venuePositionConfig.CreditAccountID},
 	}
 
 	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, CREDIT_MANAGER_CONTRACT_ADDRESS, queryJson)
@@ -136,7 +136,7 @@ func (p MarsPosition) getCreditAccountDepositInPool() (int, error) {
 		}
 
 		lendDenom := lendStruct["denom"].(string)
-		if lendDenom != p.bidPositionConfig.DepositedDenom {
+		if lendDenom != p.venuePositionConfig.DepositedDenom {
 			continue
 		}
 
@@ -145,5 +145,5 @@ func (p MarsPosition) getCreditAccountDepositInPool() (int, error) {
 		return strconv.Atoi(lendAmountStr)
 	}
 
-	return 0, fmt.Errorf("no position found for credit account ID: %s and denom: %s", p.bidPositionConfig.CreditAccountID, p.bidPositionConfig.DepositedDenom)
+	return 0, fmt.Errorf("no position found for credit account ID: %s and denom: %s", p.venuePositionConfig.CreditAccountID, p.venuePositionConfig.DepositedDenom)
 }

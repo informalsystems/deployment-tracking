@@ -11,36 +11,36 @@ const (
 	NOLUS_ST_ATOM = "ibc/FCFF8B19C61677F3B78E2A5AE3B4A34A8D23858D16905F253B8438B3AFD07FF8"
 )
 
-type NolusBidPositionConfig struct {
+type NolusVenuePositionConfig struct {
 	PoolContractAddress string
 	PoolContractToken   string
 	Address             string
 }
 
-func (bidConfig NolusBidPositionConfig) GetProtocol() Protocol {
+func (venueConfig NolusVenuePositionConfig) GetProtocol() Protocol {
 	return Nolus
 }
 
-func (bidConfig NolusBidPositionConfig) GetPoolID() string {
-	return bidConfig.PoolContractAddress
+func (venueConfig NolusVenuePositionConfig) GetPoolID() string {
+	return venueConfig.PoolContractAddress
 }
 
-func (bidConfig NolusBidPositionConfig) GetAddress() string {
-	return bidConfig.Address
+func (venueConfig NolusVenuePositionConfig) GetAddress() string {
+	return venueConfig.Address
 }
 
 type NolusPosition struct {
-	protocolConfig    ProtocolConfig
-	bidPositionConfig NolusBidPositionConfig
+	protocolConfig      ProtocolConfig
+	venuePositionConfig NolusVenuePositionConfig
 }
 
-func NewNolusPosition(config ProtocolConfig, bidPositionConfig BidPositionConfig) (*NolusPosition, error) {
-	nolusBidPositionConfig, ok := bidPositionConfig.(NolusBidPositionConfig)
+func NewNolusPosition(config ProtocolConfig, venuePositionConfig VenuePositionConfig) (*NolusPosition, error) {
+	nolusVenuePositionConfig, ok := venuePositionConfig.(NolusVenuePositionConfig)
 	if !ok {
-		return nil, fmt.Errorf("bidPositionConfig must be of NolusBidPositionConfig type")
+		return nil, fmt.Errorf("venuePositionConfig must be of NolusVenuePositionConfig type")
 	}
 
-	return &NolusPosition{protocolConfig: config, bidPositionConfig: nolusBidPositionConfig}, nil
+	return &NolusPosition{protocolConfig: config, venuePositionConfig: nolusVenuePositionConfig}, nil
 }
 
 func (p NolusPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
@@ -56,7 +56,7 @@ func (p NolusPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, addres
 }
 
 func (p NolusPosition) computeHoldings(assetData *ChainInfo, getSharesFunc func() (int, error)) (*Holdings, error) {
-	poolToken := p.bidPositionConfig.PoolContractToken
+	poolToken := p.venuePositionConfig.PoolContractToken
 
 	tokenInfo, ok := assetData.Tokens[poolToken]
 	if !ok {
@@ -103,7 +103,7 @@ func (p NolusPosition) getShareToTokenRatio() (float64, error) {
 		"price": []interface{}{},
 	}
 
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolContractAddress, queryJson)
+	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
 	if err != nil {
 		return 0, err
 	}
@@ -138,7 +138,7 @@ func (p NolusPosition) getTotalPoolShares() (int, error) {
 		"lpp_balance": []interface{}{},
 	}
 
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolContractAddress, queryJson)
+	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
 	if err != nil {
 		return 0, err
 	}
@@ -159,7 +159,7 @@ func (p NolusPosition) getAddressBalanceShares(address string) (int, error) {
 		}{Address: address},
 	}
 
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolContractAddress, queryJson)
+	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
 	if err != nil {
 		return 0, err
 	}
@@ -180,7 +180,7 @@ func (p NolusPosition) getAddressRewardsShares(address string) (int, error) {
 		}{Address: address},
 	}
 
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.bidPositionConfig.PoolContractAddress, queryJson)
+	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
 	if err != nil {
 		return 0, err
 	}
