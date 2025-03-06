@@ -145,5 +145,6 @@ func (p MarsPosition) getCreditAccountDepositInPool() (int, error) {
 		return strconv.Atoi(lendAmountStr)
 	}
 
-	return 0, fmt.Errorf("no position found for credit account ID: %s and denom: %s", p.venuePositionConfig.CreditAccountID, p.venuePositionConfig.DepositedDenom)
+	// If we didn't find the specifed denom in the lends list, it means that the liquidity is already withdrawn
+	return 0, nil
 }

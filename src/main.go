@@ -16,7 +16,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = 7
+	BidId = 5
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -39,14 +39,28 @@ func computeHoldings(bidId int) ([]VenueHoldings, error) {
 
 	bidHoldings := make([]VenueHoldings, 0, len(bidConfig.Venues))
 
-	for _, bidConfig := range bidConfig.Venues {
+	for _, venueConfig := range bidConfig.Venues {
 		// get the protocol config
-		protocolConfig := protocolConfigMap[bidConfig.GetProtocol()]
+		protocolConfig := protocolConfigMap[venueConfig.GetProtocol()]
 
 		// construct the protocol
-		protocol, err := NewDexProtocolFromConfig(protocolConfig, bidConfig)
+		protocol, err := NewDexProtocolFromConfig(protocolConfig, venueConfig)
 		if err != nil {
 			return nil, fmt.Errorf("error creating protocol: %w", err)
+		}
+
+		if _, ok := protocol.(*MissingPosition); ok {
+			venueHoldings := VenueHoldings{
+				InfoMissing:      true,
+				Protocol:         venueConfig.GetProtocol(),
+				VenueTotal:       nil,
+				AddressPrincipal: nil,
+				AddressRewards:   nil,
+			}
+
+			bidHoldings = append(bidHoldings, venueHoldings)
+
+			continue
 		}
 
 		assetData, err := fetchAssetList(protocolConfig.AssetListURL)
@@ -59,20 +73,22 @@ func computeHoldings(bidId int) ([]VenueHoldings, error) {
 			return nil, fmt.Errorf("error computing TVL: %w", err)
 		}
 
-		addressHoldings, err := protocol.ComputeAddressPrincipalHoldings(assetData, bidConfig.GetAddress())
+		addressHoldings, err := protocol.ComputeAddressPrincipalHoldings(assetData, venueConfig.GetAddress())
 		if err != nil {
 			return nil, fmt.Errorf("error computing address principal holdings: %w", err)
 		}
 
-		rewardHoldings, err := protocol.ComputeAddressRewardHoldings(assetData, bidConfig.GetAddress())
+		rewardHoldings, err := protocol.ComputeAddressRewardHoldings(assetData, venueConfig.GetAddress())
 		if err != nil {
 			return nil, fmt.Errorf("error computing address reward holdings: %w", err)
 		}
 
 		venueHoldings := VenueHoldings{
-			VenueTotal:       *tvl,
-			AddressPrincipal: *addressHoldings,
-			AddressRewards:   *rewardHoldings,
+			InfoMissing:      false,
+			Protocol:         venueConfig.GetProtocol(),
+			VenueTotal:       tvl,
+			AddressPrincipal: addressHoldings,
+			AddressRewards:   rewardHoldings,
 		}
 
 		bidHoldings = append(bidHoldings, venueHoldings)
@@ -96,14 +112,14 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 	if bidIdStr == "" {
 		allHoldings := make([]BidHoldings, 0, len(bidMap))
 
-		for bidId := range bidMap {
+		for bidId, bidConfig := range bidMap {
 			holdings, err := computeHoldings(bidId)
 			if err != nil {
 				debugLog(fmt.Sprintf("failed to compute holdings for bid ID: %d", bidId), nil)
 				holdings = nil
 			}
 
-			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, Holdings: holdings})
+			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, InitialAtomAllocation: bidConfig.InitialAtomAllocation, Holdings: holdings})
 		}
 
 		jsonData, err := json.MarshalIndent(allHoldings, "", "  ")
