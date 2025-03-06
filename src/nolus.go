@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -182,6 +183,10 @@ func (p NolusPosition) getAddressRewardsShares(address string) (int, error) {
 
 	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
 	if err != nil {
+		if strings.Contains(err.Error(), "The deposit does not exist") {
+			return 0, nil
+		}
+
 		return 0, err
 	}
 
