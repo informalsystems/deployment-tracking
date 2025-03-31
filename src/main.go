@@ -160,9 +160,6 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 
 // experimentalHandler serves data about experimental deployments
 func experimentalHandler(w http.ResponseWriter, r *http.Request) {
-	// Get experimental ID from query params
-	experimentalIdStr := r.URL.Query().Get("id")
-
 	// Get asset data for computing holdings
 	assetData, err := fetchAssetList("https://chains.cosmos.directory/osmosis") // Using Osmosis for now
 	if err != nil {
@@ -171,79 +168,33 @@ func experimentalHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If no ID provided, return all experimental deployments
-	if experimentalIdStr == "" {
-		allDeployments := make([]ExperimentalDeploymentResponse, 0, len(experimentalMap))
-		for _, deployment := range experimentalMap {
-			// Compute current holdings for each deployment
-			currentHoldings, err := deployment.Querier.GetCurrentAddressHoldings(assetData)
-			if err != nil {
-				debugLog(fmt.Sprintf("Error computing holdings for deployment %d: %v", deployment.ExperimentalId, err), nil)
-				currentHoldings = nil
-			}
-
-			response := ExperimentalDeploymentResponse{
-				ExperimentalId:         deployment.ExperimentalId,
-				Name:                   deployment.Name,
-				Description:            deployment.Description,
-				Logo:                   deployment.Logo,
-				StartTimestamp:         deployment.StartTimestamp,
-				EndTimestamp:           deployment.EndTimestamp,
-				InitialAddressHoldings: deployment.InitialAddressHoldings,
-				CurrentAddressHoldings: currentHoldings,
-			}
-			allDeployments = append(allDeployments, response)
-		}
-
-		jsonData, err := json.MarshalIndent(allDeployments, "", "  ")
+	allDeployments := make([]ExperimentalDeploymentResponse, 0, len(experimentalMap))
+	for _, deployment := range experimentalMap {
+		// Compute current holdings for each deployment
+		currentHoldings, err := deployment.Querier.GetCurrentAddressHoldings(assetData)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			debugLog(fmt.Sprintf("Error computing holdings for deployment %d: %v", deployment.ExperimentalId, err), nil)
+			currentHoldings = nil
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(jsonData)
-		return
+
+		response := ExperimentalDeploymentResponse{
+			ExperimentalId:         deployment.ExperimentalId,
+			Name:                   deployment.Name,
+			Description:            deployment.Description,
+			Logo:                   deployment.Logo,
+			StartTimestamp:         deployment.StartTimestamp,
+			EndTimestamp:           deployment.EndTimestamp,
+			InitialAddressHoldings: deployment.InitialAddressHoldings,
+			CurrentAddressHoldings: currentHoldings,
+		}
+		allDeployments = append(allDeployments, response)
 	}
 
-	// Parse experimental ID
-	experimentalId, err := strconv.Atoi(experimentalIdStr)
-	if err != nil {
-		http.Error(w, "Invalid experimental ID", http.StatusBadRequest)
-		return
-	}
-
-	// Get deployment config
-	deployment, ok := experimentalMap[experimentalId]
-	if !ok {
-		http.Error(w, "Experimental deployment not found", http.StatusNotFound)
-		return
-	}
-
-	// Compute holdings
-	currentHoldings, err := deployment.Querier.GetCurrentAddressHoldings(assetData)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error computing current holdings: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	// Create response
-	response := ExperimentalDeploymentResponse{
-		ExperimentalId:         deployment.ExperimentalId,
-		Name:                   deployment.Name,
-		Description:            deployment.Description,
-		Logo:                   deployment.Logo,
-		StartTimestamp:         deployment.StartTimestamp,
-		EndTimestamp:           deployment.EndTimestamp,
-		InitialAddressHoldings: deployment.InitialAddressHoldings,
-		CurrentAddressHoldings: currentHoldings,
-	}
-
-	// Return response
-	jsonData, err := json.MarshalIndent(response, "", "  ")
+	jsonData, err := json.MarshalIndent(allDeployments, "", "  ")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(jsonData)
 }
