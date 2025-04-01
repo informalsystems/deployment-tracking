@@ -141,18 +141,18 @@ var experimentalMap = map[int]*ExperimentalDeployment{
 		InitialAddressHoldings: &Holdings{
 			Balances: []Asset{
 				{
-					Denom:       "stATOM",
+					Denom:       "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
 					Amount:      1000,
-					USDValue:    1000,
 					DisplayName: "stATOM",
 				},
 				{
-					Denom:       "ATOM",
+					Denom:       "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
 					Amount:      1000,
-					USDValue:    1000,
 					DisplayName: "ATOM",
 				},
 			},
+			TotalUSDC: 0, // Will be computed at runtime
+			TotalAtom: 0, // Will be computed at runtime
 		},
 	},
 }

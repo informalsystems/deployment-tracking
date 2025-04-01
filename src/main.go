@@ -177,6 +177,13 @@ func experimentalHandler(w http.ResponseWriter, r *http.Request) {
 			currentHoldings = nil
 		}
 
+		// Compute initial holdings with prices at deployment time
+		initialHoldingsWithPrices, err := ComputeInitialHoldingsWithPrices(deployment.InitialAddressHoldings, assetData, deployment.StartTimestamp)
+		if err != nil {
+			debugLog(fmt.Sprintf("Error computing initial holdings with prices for deployment %d: %v", deployment.ExperimentalId, err), nil)
+			initialHoldingsWithPrices = deployment.InitialAddressHoldings
+		}
+
 		response := ExperimentalDeploymentResponse{
 			ExperimentalId:         deployment.ExperimentalId,
 			Name:                   deployment.Name,
@@ -184,7 +191,7 @@ func experimentalHandler(w http.ResponseWriter, r *http.Request) {
 			Logo:                   deployment.Logo,
 			StartTimestamp:         deployment.StartTimestamp,
 			EndTimestamp:           deployment.EndTimestamp,
-			InitialAddressHoldings: deployment.InitialAddressHoldings,
+			InitialAddressHoldings: initialHoldingsWithPrices,
 			CurrentAddressHoldings: currentHoldings,
 		}
 		allDeployments = append(allDeployments, response)

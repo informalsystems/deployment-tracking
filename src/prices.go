@@ -29,6 +29,110 @@ func getTokenValues(
 	return usdValue, atomValue, nil
 }
 
+type CoinGeckoHistoricalResponse struct {
+	MarketData struct {
+		CurrentPrice map[string]float64 `json:"current_price"`
+	} `json:"market_data"`
+}
+
+func getHistoricalTokenPrices(coingeckoID string, timestamp int64) (float64, error) {
+	// Convert timestamp to date string for CoinGecko API (dd-mm-yyyy)
+	t := time.Unix(timestamp, 0)
+	dateStr := t.Format("02-01-2006")
+
+	// Initialize historical cache if needed
+	if historicalCache == nil {
+		historicalCache = make(map[string]map[string]float64)
+	}
+
+	// Check if we have the token in cache
+	if tokenCache, exists := historicalCache[coingeckoID]; exists {
+		if price, exists := tokenCache[dateStr]; exists {
+			return price, nil
+		}
+	} else {
+		historicalCache[coingeckoID] = make(map[string]float64)
+	}
+
+	// If not in cache, fetch from API
+	url := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s/history?date=%s", coingeckoID, dateStr)
+
+	debugLog("Getting historical token price", map[string]interface{}{
+		"token": coingeckoID,
+		"date":  dateStr,
+		"url":   url,
+	})
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return 0, fmt.Errorf("fetching historical price data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var result CoinGeckoHistoricalResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, fmt.Errorf("decoding historical price response: %v", err)
+	}
+
+	if price, ok := result.MarketData.CurrentPrice["usd"]; ok {
+		// Cache the result
+		historicalCache[coingeckoID][dateStr] = price
+		return price, nil
+	}
+
+	return 0, fmt.Errorf("no USD price found in historical data for token: %s", coingeckoID)
+}
+
+func getTokenValuesAtTimestamp(adjustedAmount float64, tokenInfo ChainTokenInfo, timestamp int64) (float64, float64, error) {
+	price, err := getHistoricalTokenPrices(tokenInfo.CoingeckoID, timestamp)
+	if err != nil {
+		return 0, 0, fmt.Errorf("fetching historical token price: %s", err)
+	}
+
+	usdValue := adjustedAmount * price
+	atomPrice, err := getHistoricalTokenPrices("cosmos", timestamp)
+	if err != nil {
+		return 0, 0, fmt.Errorf("fetching historical ATOM price: %s", err)
+	}
+
+	atomValue := usdValue / atomPrice
+	return usdValue, atomValue, nil
+}
+
+func ComputeInitialHoldingsWithPrices(holdings *Holdings, assetData *ChainInfo, timestamp int64) (*Holdings, error) {
+	var assets []Asset
+	totalUSD := 0.0
+	totalAtom := 0.0
+
+	for _, asset := range holdings.Balances {
+		tokenInfo, ok := assetData.Tokens[asset.Denom]
+		if !ok {
+			continue
+		}
+
+		usdValue, atomValue, err := getTokenValuesAtTimestamp(asset.Amount, tokenInfo, timestamp)
+		if err != nil {
+			continue
+		}
+
+		totalUSD += usdValue
+		totalAtom += atomValue
+
+		assets = append(assets, Asset{
+			Denom:       asset.Denom,
+			Amount:      asset.Amount,
+			DisplayName: asset.DisplayName,
+			USDValue:    usdValue,
+		})
+	}
+
+	return &Holdings{
+		Balances:  assets,
+		TotalUSDC: totalUSD,
+		TotalAtom: totalAtom,
+	}, nil
+}
+
 type SkipAsset struct {
 	Denom             string `json:"denom"`
 	ChainID           string `json:"chain_id"`
@@ -51,6 +155,7 @@ var (
 	pricesInitialized bool = false
 	priceCache        *PriceCache
 	skipCache         *SkipCache
+	historicalCache   map[string]map[string]float64 // coingeckoID -> date -> price
 )
 
 const PriceCacheTTL = 30 * time.Minute

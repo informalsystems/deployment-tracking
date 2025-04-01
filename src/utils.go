@@ -123,7 +123,17 @@ func QuerySmartContractData(nodeUrl string, contractAddress string,
 		nodeUrl, contractAddress, string(queryEncoded))
 	debugLog("Fetching data from smart contract", map[string]string{"url": url})
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request failed: %v", err)
+	}
+
+	// Add the required headers
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", "sk_939c71118a8a46babe8c11b10ce636a4")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching data failed: %v", err)
 	}
