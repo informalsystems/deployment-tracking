@@ -142,12 +142,12 @@ var experimentalMap = map[int]*ExperimentalDeployment{
 			Balances: []Asset{
 				{
 					Denom:       "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
-					Amount:      1000,
+					Amount:      1968.1,
 					DisplayName: "stATOM",
 				},
 				{
 					Denom:       "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
-					Amount:      1000,
+					Amount:      6976.354,
 					DisplayName: "ATOM",
 				},
 			},

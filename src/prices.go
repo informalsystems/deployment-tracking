@@ -95,6 +95,11 @@ func getTokenValuesAtTimestamp(adjustedAmount float64, tokenInfo ChainTokenInfo,
 		return 0, 0, fmt.Errorf("fetching historical ATOM price: %s", err)
 	}
 
+	debugLog("Got historical prices", map[string]interface{}{
+		tokenInfo.CoingeckoID: price,
+		"atom":                atomPrice,
+	})
+
 	atomValue := usdValue / atomPrice
 	return usdValue, atomValue, nil
 }
