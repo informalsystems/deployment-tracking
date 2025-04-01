@@ -1,0 +1,46 @@
+[
+  {
+    "experimental_id": 1,
+    "name": "Magma: Experimental deployment to ATOM\u003c\u003estATOM vault",
+    "description": "First experimental deployment testing Magma Protocol integration",
+    "logo": "https://pbs.twimg.com/profile_images/1830561644285714433/ImSkbXR0_400x400.jpg",
+    "start_timestamp": 1742325420,
+    "end_timestamp": 0,
+    "initial_address_holdings": {
+      "balances": [
+        {
+          "denom": "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
+          "amount": 1968.1,
+          "usd_value": 14085.393573067538,
+          "display_name": "stATOM"
+        },
+        {
+          "denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+          "amount": 6976.354,
+          "usd_value": 32328.374531126003,
+          "display_name": "ATOM"
+        }
+      ],
+      "total_usdc": 46413.76810419354,
+      "total_atom": 10015.93434451853
+    },
+    "current_address_holdings": {
+      "balances": [
+        {
+          "denom": "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
+          "amount": 750.4880562123502,
+          "usd_value": 4934.3710560283025,
+          "display_name": "stATOM"
+        },
+        {
+          "denom": "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+          "amount": 8859.278492509755,
+          "usd_value": 38204.278827329035,
+          "display_name": "ATOM"
+        }
+      ],
+      "total_usdc": 43138.649883357335,
+      "total_atom": 10003.521198105944
+    }
+  }
+]

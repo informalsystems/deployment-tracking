@@ -127,16 +127,30 @@ func (m *MagmaQuerier) computeHoldings(assetData *ChainInfo) (*Holdings, error) 
 	adjustedBal0 := userBal0 / math.Pow10(int(token0Info.Decimals))
 	adjustedBal1 := userBal1 / math.Pow10(int(token1Info.Decimals))
 
-	// Calculate USD and ATOM values for both assets
-	usdValue0, atomValue0, err := getTokenValues(adjustedBal0, *token0Info)
+	// Get USD prices using Numia API
+	price0, err := getNumiaPrice(token0Denom)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compute token0 values: %v", err)
+		return nil, fmt.Errorf("failed to get token0 price: %v", err)
 	}
 
-	usdValue1, atomValue1, err := getTokenValues(adjustedBal1, *token1Info)
+	price1, err := getNumiaPrice(token1Denom)
 	if err != nil {
-		return nil, fmt.Errorf("failed to compute token1 values: %v", err)
+		return nil, fmt.Errorf("failed to get token1 price: %v", err)
 	}
+
+	// Calculate USD values
+	usdValue0 := adjustedBal0 * price0
+	usdValue1 := adjustedBal1 * price1
+
+	// Get ATOM price for conversion
+	atomPrice, err := getNumiaPrice("ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2")
+	if err != nil {
+		return nil, fmt.Errorf("failed to get ATOM price: %v", err)
+	}
+
+	// Calculate ATOM values
+	atomValue0 := usdValue0 / atomPrice
+	atomValue1 := usdValue1 / atomPrice
 
 	holdings := &Holdings{
 		Balances: []Asset{

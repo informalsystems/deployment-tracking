@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -29,115 +30,6 @@ func getTokenValues(
 	return usdValue, atomValue, nil
 }
 
-type CoinGeckoHistoricalResponse struct {
-	MarketData struct {
-		CurrentPrice map[string]float64 `json:"current_price"`
-	} `json:"market_data"`
-}
-
-func getHistoricalTokenPrices(coingeckoID string, timestamp int64) (float64, error) {
-	// Convert timestamp to date string for CoinGecko API (dd-mm-yyyy)
-	t := time.Unix(timestamp, 0)
-	dateStr := t.Format("02-01-2006")
-
-	// Initialize historical cache if needed
-	if historicalCache == nil {
-		historicalCache = make(map[string]map[string]float64)
-	}
-
-	// Check if we have the token in cache
-	if tokenCache, exists := historicalCache[coingeckoID]; exists {
-		if price, exists := tokenCache[dateStr]; exists {
-			return price, nil
-		}
-	} else {
-		historicalCache[coingeckoID] = make(map[string]float64)
-	}
-
-	// If not in cache, fetch from API
-	url := fmt.Sprintf("https://api.coingecko.com/api/v3/coins/%s/history?date=%s", coingeckoID, dateStr)
-
-	debugLog("Getting historical token price", map[string]interface{}{
-		"token": coingeckoID,
-		"date":  dateStr,
-		"url":   url,
-	})
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return 0, fmt.Errorf("fetching historical price data: %v", err)
-	}
-	defer resp.Body.Close()
-
-	var result CoinGeckoHistoricalResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return 0, fmt.Errorf("decoding historical price response: %v", err)
-	}
-
-	if price, ok := result.MarketData.CurrentPrice["usd"]; ok {
-		// Cache the result
-		historicalCache[coingeckoID][dateStr] = price
-		return price, nil
-	}
-
-	return 0, fmt.Errorf("no USD price found in historical data for token: %s", coingeckoID)
-}
-
-func getTokenValuesAtTimestamp(adjustedAmount float64, tokenInfo ChainTokenInfo, timestamp int64) (float64, float64, error) {
-	price, err := getHistoricalTokenPrices(tokenInfo.CoingeckoID, timestamp)
-	if err != nil {
-		return 0, 0, fmt.Errorf("fetching historical token price: %s", err)
-	}
-
-	usdValue := adjustedAmount * price
-	atomPrice, err := getHistoricalTokenPrices("cosmos", timestamp)
-	if err != nil {
-		return 0, 0, fmt.Errorf("fetching historical ATOM price: %s", err)
-	}
-
-	debugLog("Got historical prices", map[string]interface{}{
-		tokenInfo.CoingeckoID: price,
-		"atom":                atomPrice,
-	})
-
-	atomValue := usdValue / atomPrice
-	return usdValue, atomValue, nil
-}
-
-func ComputeInitialHoldingsWithPrices(holdings *Holdings, assetData *ChainInfo, timestamp int64) (*Holdings, error) {
-	var assets []Asset
-	totalUSD := 0.0
-	totalAtom := 0.0
-
-	for _, asset := range holdings.Balances {
-		tokenInfo, ok := assetData.Tokens[asset.Denom]
-		if !ok {
-			continue
-		}
-
-		usdValue, atomValue, err := getTokenValuesAtTimestamp(asset.Amount, tokenInfo, timestamp)
-		if err != nil {
-			continue
-		}
-
-		totalUSD += usdValue
-		totalAtom += atomValue
-
-		assets = append(assets, Asset{
-			Denom:       asset.Denom,
-			Amount:      asset.Amount,
-			DisplayName: asset.DisplayName,
-			USDValue:    usdValue,
-		})
-	}
-
-	return &Holdings{
-		Balances:  assets,
-		TotalUSDC: totalUSD,
-		TotalAtom: totalAtom,
-	}, nil
-}
-
 type SkipAsset struct {
 	Denom             string `json:"denom"`
 	ChainID           string `json:"chain_id"`
@@ -160,7 +52,6 @@ var (
 	pricesInitialized bool = false
 	priceCache        *PriceCache
 	skipCache         *SkipCache
-	historicalCache   map[string]map[string]float64 // coingeckoID -> date -> price
 )
 
 const PriceCacheTTL = 30 * time.Minute
@@ -302,7 +193,151 @@ func getAtomPrice() (float64, error) {
 	return getTokenPrice("cosmos")
 }
 
-// Initialize caches in main
+// Numia API types and constants
+const (
+	NumiaAPIBaseURL = "https://osmosis.numia.xyz/tokens/v2"
+	NumiaAuthToken  = "sk_939c71118a8a46babe8c11b10ce636a4"
+)
+
+type NumiaHistoricalPrice struct {
+	Time   int64   `json:"time"`
+	High   float64 `json:"high"`
+	Low    float64 `json:"low"`
+	Close  float64 `json:"close"`
+	Open   float64 `json:"open"`
+	Volume float64 `json:"volume"`
+}
+
+type NumiaRealtimePrice struct {
+	Denom    string  `json:"denom"`
+	USDPrice float64 `json:"usd_price"`
+}
+
+func getNumiaPrice(denom string) (float64, error) {
+	// Replace standard IBC slash with percent encoded value
+	encodedDenom := strings.Replace(denom, "ibc/", "ibc%2F", 1)
+	url := fmt.Sprintf("%s/real-time/%s/price", NumiaAPIBaseURL, encodedDenom)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", NumiaAuthToken))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("fetching price data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var result NumiaRealtimePrice
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, fmt.Errorf("decoding price response: %v", err)
+	}
+
+	return result.USDPrice, nil
+}
+
+func getNumiaHistoricalPrice(denom string, timestamp int64) (float64, error) {
+	// Replace standard IBC slash with percent encoded value
+	encodedDenom := strings.Replace(denom, "ibc/", "ibc%2F", 1)
+	url := fmt.Sprintf("%s/historical/%s/chart", NumiaAPIBaseURL, encodedDenom)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", NumiaAuthToken))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("fetching historical price data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var prices []NumiaHistoricalPrice
+	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
+		return 0, fmt.Errorf("decoding historical price response: %v", err)
+	}
+
+	// Find the closest price point to the requested timestamp
+	var closestPrice *NumiaHistoricalPrice
+	var smallestDiff int64 = math.MaxInt64
+
+	for i := range prices {
+		diff := abs64(prices[i].Time - timestamp)
+		if diff < smallestDiff {
+			smallestDiff = diff
+			closestPrice = &prices[i]
+		}
+	}
+
+	if closestPrice == nil {
+		return 0, fmt.Errorf("no historical price data found for timestamp %d", timestamp)
+	}
+
+	return closestPrice.Close, nil
+}
+
+func abs64(n int64) int64 {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+func ComputeInitialHoldingsWithPrices(holdings *Holdings, assetData *ChainInfo, timestamp int64) (*Holdings, error) {
+	var assets []Asset
+	totalUSD := 0.0
+	totalAtom := 0.0
+
+	// Get ATOM price for conversion
+	atomPrice, err := getNumiaHistoricalPrice("ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2", timestamp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get historical ATOM price: %v", err)
+	}
+
+	for _, asset := range holdings.Balances {
+		_, ok := assetData.Tokens[asset.Denom]
+		if !ok {
+			continue
+		}
+
+		// Get historical price from Numia API
+		price, err := getNumiaHistoricalPrice(asset.Denom, timestamp)
+		if err != nil {
+			debugLog("Failed to get historical price, skipping asset", map[string]interface{}{
+				"denom": asset.Denom,
+				"error": err.Error(),
+			})
+			continue
+		}
+
+		usdValue := asset.Amount * price
+		atomValue := usdValue / atomPrice
+
+		totalUSD += usdValue
+		totalAtom += atomValue
+
+		assets = append(assets, Asset{
+			Denom:       asset.Denom,
+			Amount:      asset.Amount,
+			DisplayName: asset.DisplayName,
+			USDValue:    usdValue,
+		})
+	}
+
+	return &Holdings{
+		Balances:  assets,
+		TotalUSDC: totalUSD,
+		TotalAtom: totalAtom,
+	}, nil
+}
+
 func init() {
 	if err := initializePriceCache(); err != nil {
 		log.Printf("Warning: Failed to fetch Skip assets: %v", err)
