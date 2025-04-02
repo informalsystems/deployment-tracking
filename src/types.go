@@ -137,6 +137,8 @@ var experimentalMap = map[int]*ExperimentalDeployment{
 		Querier: NewMagmaQuerier(MagmaDeploymentConfig{
 			VaultAddress:  "osmo1ssm5lqgrxcp9lqvr33zcafyd6unme0q4kq2fpqzgwznnjwujts6sfmfass",
 			HolderAddress: "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+			token0Denom:   "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
+			token1Denom:   "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
 		}),
 		InitialAddressHoldings: &Holdings{
 			Balances: []Asset{

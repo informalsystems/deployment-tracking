@@ -12,6 +12,10 @@ type MagmaDeploymentConfig struct {
 	HolderAddress string
 	// The address of the Magma vault.
 	VaultAddress string
+	// The denom of the first asset in the vault.
+	token0Denom string
+	// The denom of the second asset in the vault.
+	token1Denom string
 }
 
 // MagmaHoldingsData represents the response from Magma's API
@@ -108,9 +112,8 @@ func (m *MagmaQuerier) computeHoldings(assetData *ChainInfo) (*Holdings, error) 
 	userBal0 := bal0 * shareRatio
 	userBal1 := bal1 * shareRatio
 
-	// Create holdings with the two assets
-	token0Denom := "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901"
-	token1Denom := "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2"
+	token0Denom := m.config.token0Denom
+	token1Denom := m.config.token1Denom
 
 	// Get token info for both assets
 	token0Info, err := assetData.GetTokenInfo(token0Denom)
