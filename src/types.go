@@ -130,7 +130,7 @@ var experimentalMap = map[int]*ExperimentalDeployment{
 	1: {
 		ExperimentalId: 1,
 		Name:           "Magma: Experimental deployment to ATOM<>stATOM vault",
-		Description:    "First experimental deployment testing Magma Protocol integration",
+		Description:    "This is a first experimental deployment to test the Magma vaults integration. The Hydro committee has allocated 10,000 ATOM to this test deployment, which are managed by committee member RoboMcGobo in a [0 fee vault](https://app.magma.eco/vault/osmo1ssm5lqgrxcp9lqvr33zcafyd6unme0q4kq2fpqzgwznnjwujts6sfmfass).",
 		Logo:           "https://pbs.twimg.com/profile_images/1830561644285714433/ImSkbXR0_400x400.jpg",
 		StartTimestamp: 1742325420,
 		EndTimestamp:   0,
