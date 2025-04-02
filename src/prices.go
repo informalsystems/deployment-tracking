@@ -4,7 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -192,8 +194,157 @@ func getAtomPrice() (float64, error) {
 	return getTokenPrice("cosmos")
 }
 
-// Initialize caches in main
+// Numia API types and constants
+const (
+	NumiaAPIBaseURL = "https://osmosis.numia.xyz/tokens/v2"
+)
+
+var NumiaAuthToken = os.Getenv("NUMIA_API_TOKEN")
+
+type NumiaHistoricalPrice struct {
+	Time   int64   `json:"time"`
+	High   float64 `json:"high"`
+	Low    float64 `json:"low"`
+	Close  float64 `json:"close"`
+	Open   float64 `json:"open"`
+	Volume float64 `json:"volume"`
+}
+
+type NumiaRealtimePrice struct {
+	Denom    string  `json:"denom"`
+	USDPrice float64 `json:"usd_price"`
+}
+
+func getNumiaPrice(denom string) (float64, error) {
+	// Replace standard IBC slash with percent encoded value
+	encodedDenom := strings.Replace(denom, "ibc/", "ibc%2F", 1)
+	url := fmt.Sprintf("%s/real-time/%s/price", NumiaAPIBaseURL, encodedDenom)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", NumiaAuthToken))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("fetching price data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var result NumiaRealtimePrice
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, fmt.Errorf("decoding price response: %v", err)
+	}
+
+	return result.USDPrice, nil
+}
+
+func getNumiaHistoricalPrice(denom string, timestamp int64) (float64, error) {
+	// Replace standard IBC slash with percent encoded value
+	encodedDenom := strings.Replace(denom, "ibc/", "ibc%2F", 1)
+	url := fmt.Sprintf("%s/historical/%s/chart", NumiaAPIBaseURL, encodedDenom)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, fmt.Errorf("creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", NumiaAuthToken))
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("fetching historical price data: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var prices []NumiaHistoricalPrice
+	if err := json.NewDecoder(resp.Body).Decode(&prices); err != nil {
+		return 0, fmt.Errorf("decoding historical price response: %v", err)
+	}
+
+	// Find the closest price point to the requested timestamp
+	var closestPrice *NumiaHistoricalPrice
+	var smallestDiff int64 = math.MaxInt64
+
+	for i := range prices {
+		diff := abs64(prices[i].Time - timestamp)
+		if diff < smallestDiff {
+			smallestDiff = diff
+			closestPrice = &prices[i]
+		}
+	}
+
+	if closestPrice == nil {
+		return 0, fmt.Errorf("no historical price data found for timestamp %d", timestamp)
+	}
+
+	return closestPrice.Close, nil
+}
+
+func abs64(n int64) int64 {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
+
+func ComputeInitialHoldingsWithPrices(holdings *Holdings, assetData *ChainInfo, timestamp int64) (*Holdings, error) {
+	var assets []Asset
+	totalUSD := 0.0
+	totalAtom := 0.0
+
+	// Get ATOM price for conversion
+	atomPrice, err := getNumiaHistoricalPrice("ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2", timestamp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get historical ATOM price: %v", err)
+	}
+
+	for _, asset := range holdings.Balances {
+		_, ok := assetData.Tokens[asset.Denom]
+		if !ok {
+			continue
+		}
+
+		// Get historical price from Numia API
+		price, err := getNumiaHistoricalPrice(asset.Denom, timestamp)
+		if err != nil {
+			debugLog("Failed to get historical price, skipping asset", map[string]interface{}{
+				"denom": asset.Denom,
+				"error": err.Error(),
+			})
+			continue
+		}
+
+		usdValue := asset.Amount * price
+		atomValue := usdValue / atomPrice
+
+		totalUSD += usdValue
+		totalAtom += atomValue
+
+		assets = append(assets, Asset{
+			Denom:       asset.Denom,
+			Amount:      asset.Amount,
+			DisplayName: asset.DisplayName,
+			USDValue:    usdValue,
+		})
+	}
+
+	return &Holdings{
+		Balances:  assets,
+		TotalUSDC: totalUSD,
+		TotalAtom: totalAtom,
+	}, nil
+}
+
 func init() {
+	if NumiaAuthToken == "" {
+		log.Fatal("NUMIA_API_TOKEN environment variable must be set")
+	}
+
 	if err := initializePriceCache(); err != nil {
 		log.Printf("Warning: Failed to fetch Skip assets: %v", err)
 	}

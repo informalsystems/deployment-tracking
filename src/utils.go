@@ -123,7 +123,19 @@ func QuerySmartContractData(nodeUrl string, contractAddress string,
 		nodeUrl, contractAddress, string(queryEncoded))
 	debugLog("Fetching data from smart contract", map[string]string{"url": url})
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request failed: %v", err)
+	}
+
+	// Add the required headers. this is just the Numia authentication header for now,
+	// we could change this in the future to have different headers,
+	// maybe bundled with the node
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", NumiaAuthToken))
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("fetching data failed: %v", err)
 	}

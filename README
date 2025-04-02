@@ -1,4 +1,14 @@
 A simple server that serves to track deployment venues.
 
+## Setup
+
+Before running the server, make sure to set the following environment variable:
+
+```bash
+export NUMIA_API_TOKEN=your_api_token_here
+```
+
+## Running
+
 In `src`, run `go run .` to start the server.
 Run `go run . --debug` to instead query the configured venue once.

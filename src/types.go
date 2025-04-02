@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // Protocol type enum
 type Protocol string
@@ -20,7 +22,6 @@ const (
 )
 
 // Core data structures
-
 type ChainTokenInfo struct {
 	Denom       string `json:"denom"`
 	Display     string `json:"display"`
@@ -95,6 +96,69 @@ type BidHoldings struct {
 	Holdings              []VenueHoldings `json:"holdings"`
 }
 
+// ExperimentalDeploymentQueryInterface defines the methods required for experimental deployments
+type ExperimentalDeploymentQueryInterface interface {
+	GetCurrentAddressHoldings(assetData *ChainInfo) (*Holdings, error)
+}
+
+type ExperimentalDeployment struct {
+	ExperimentalId         int       `json:"experimental_id"`
+	Name                   string    `json:"name"`
+	Description            string    `json:"description"`
+	Logo                   string    `json:"logo"`
+	StartTimestamp         int64     `json:"start_timestamp"`
+	EndTimestamp           int64     `json:"end_timestamp"`
+	InitialAddressHoldings *Holdings `json:"initial_address_holdings"`
+	CurrentAddressHoldings *Holdings `json:"current_address_holdings"`
+	Querier                ExperimentalDeploymentQueryInterface
+}
+
+// ExperimentalDeploymentResponse represents the response structure for experimental deployments
+type ExperimentalDeploymentResponse struct {
+	ExperimentalId         int       `json:"experimental_id"`
+	Name                   string    `json:"name"`
+	Description            string    `json:"description"`
+	Logo                   string    `json:"logo"`
+	StartTimestamp         int64     `json:"start_timestamp"`
+	EndTimestamp           int64     `json:"end_timestamp"`
+	InitialAddressHoldings *Holdings `json:"initial_address_holdings"`
+	CurrentAddressHoldings *Holdings `json:"current_address_holdings"`
+}
+
+// experimentalMap holds the configurations for experimental deployments
+var experimentalMap = map[int]*ExperimentalDeployment{
+	1: {
+		ExperimentalId: 1,
+		Name:           "Magma: Experimental deployment to ATOM<>stATOM vault",
+		Description:    "First experimental deployment testing Magma Protocol integration",
+		Logo:           "https://pbs.twimg.com/profile_images/1830561644285714433/ImSkbXR0_400x400.jpg",
+		StartTimestamp: 1742325420,
+		EndTimestamp:   0,
+		Querier: NewMagmaQuerier(MagmaDeploymentConfig{
+			VaultAddress:  "osmo1ssm5lqgrxcp9lqvr33zcafyd6unme0q4kq2fpqzgwznnjwujts6sfmfass",
+			HolderAddress: "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+			token0Denom:   "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
+			token1Denom:   "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+		}),
+		InitialAddressHoldings: &Holdings{
+			Balances: []Asset{
+				{
+					Denom:       "ibc/C140AFD542AE77BD7DCC83F13FDD8C5E5BB8C4929785E6EC2F4C636F98F17901",
+					Amount:      1968.1,
+					DisplayName: "stATOM",
+				},
+				{
+					Denom:       "ibc/27394FB092D2ECCD56123C74F36E4C1F926001CEADA9CA97EA622B25F41E5EB2",
+					Amount:      6976.354,
+					DisplayName: "ATOM",
+				},
+			},
+			TotalUSDC: 0, // Will be computed at runtime
+			TotalAtom: 0, // Will be computed at runtime
+		},
+	},
+}
+
 // Protocol interface
 type DexProtocol interface {
 	ComputeTVL(assetData *ChainInfo) (*Holdings, error)
@@ -115,7 +179,6 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 	case Margined, Demex, Neptune, Shade, WhiteWhale, Inter:
 		return NewMissingPosition(config, venuePositionConfig)
 	}
-
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
 }
 
@@ -215,7 +278,7 @@ var bidMap = map[int]BidPositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
 				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
 				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
 			},
 		},
@@ -233,7 +296,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
 				PoolContractToken:   NOLUS_ST_ATOM,
 				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
-			}},
+			},
+		},
 	},
 	6: {
 		InitialAtomAllocation: 3143,
@@ -256,7 +320,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
 				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			}},
+			},
+		},
 	},
 	// round 2 starts here
 	11: {
@@ -272,7 +337,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
 				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
 				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			}},
+			},
+		},
 	},
 	12: {
 		InitialAtomAllocation: 33953,
@@ -300,7 +366,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
 				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			}},
+			},
+		},
 	},
 	16: {
 		InitialAtomAllocation: 42000,
@@ -308,7 +375,8 @@ var bidMap = map[int]BidPositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "2533",
 				DepositedDenom:  NEUTRON_ATOM,
-			}},
+			},
+		},
 	},
 	17: {
 		InitialAtomAllocation: 48650,
@@ -317,7 +385,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 				PositionID: "11124334",
-			}},
+			},
+		},
 	},
 	// round 3 starts here
 	18: {
@@ -327,7 +396,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 				PositionID: "11701290",
-			}},
+			},
+		},
 	},
 	19: {
 		InitialAtomAllocation: 69171,
@@ -338,7 +408,8 @@ var bidMap = map[int]BidPositionConfig{
 			// 	Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 			// 	PositionID: "",
 			// },
-			MissingVenuePositionConfig{Protocol: Inter}},
+			MissingVenuePositionConfig{Protocol: Inter},
+		},
 	},
 	22: {
 		InitialAtomAllocation: 10000,
@@ -354,7 +425,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
 				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
 				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			}},
+			},
+		},
 	},
 	23: {
 		InitialAtomAllocation: 22340,
@@ -363,7 +435,8 @@ var bidMap = map[int]BidPositionConfig{
 				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
 				PoolContractToken:   NOLUS_ATOM,
 				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
-			}},
+			},
+		},
 	},
 	24: {
 		InitialAtomAllocation: 43962,
@@ -377,6 +450,27 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
 				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
 				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			}},
+			},
+		},
+	},
+	25: {
+		InitialAtomAllocation: 170000,
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "12515115",
+			},
+		},
+	},
+	26: {
+		InitialAtomAllocation: 0,
+		Venues: []VenuePositionConfig{
+			NolusVenuePositionConfig{
+				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
+				PoolContractToken:   NOLUS_ATOM,
+				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+			},
+		},
 	},
 }

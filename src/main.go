@@ -16,7 +16,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = 5
+	BidId = 26
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -158,6 +158,54 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
+// experimentalHandler serves data about experimental deployments
+func experimentalHandler(w http.ResponseWriter, r *http.Request) {
+	// Get asset data for computing holdings
+	assetData, err := fetchAssetList("https://chains.cosmos.directory/osmosis") // Using Osmosis for now
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching asset list: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// If no ID provided, return all experimental deployments
+	allDeployments := make([]ExperimentalDeploymentResponse, 0, len(experimentalMap))
+	for _, deployment := range experimentalMap {
+		// Compute current holdings for each deployment
+		currentHoldings, err := deployment.Querier.GetCurrentAddressHoldings(assetData)
+		if err != nil {
+			debugLog(fmt.Sprintf("Error computing holdings for deployment %d: %v", deployment.ExperimentalId, err), nil)
+			currentHoldings = nil
+		}
+
+		// Compute initial holdings with prices at deployment time
+		initialHoldingsWithPrices, err := ComputeInitialHoldingsWithPrices(deployment.InitialAddressHoldings, assetData, deployment.StartTimestamp)
+		if err != nil {
+			debugLog(fmt.Sprintf("Error computing initial holdings with prices for deployment %d: %v", deployment.ExperimentalId, err), nil)
+			initialHoldingsWithPrices = deployment.InitialAddressHoldings
+		}
+
+		response := ExperimentalDeploymentResponse{
+			ExperimentalId:         deployment.ExperimentalId,
+			Name:                   deployment.Name,
+			Description:            deployment.Description,
+			Logo:                   deployment.Logo,
+			StartTimestamp:         deployment.StartTimestamp,
+			EndTimestamp:           deployment.EndTimestamp,
+			InitialAddressHoldings: initialHoldingsWithPrices,
+			CurrentAddressHoldings: currentHoldings,
+		}
+		allDeployments = append(allDeployments, response)
+	}
+
+	jsonData, err := json.MarshalIndent(allDeployments, "", "  ")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(jsonData)
+}
+
 // --- Main / Server Bootstrap ---
 
 func main() {
@@ -184,9 +232,10 @@ func main() {
 
 	router := mux.NewRouter()
 
-	// Register the holdings endpoints.
+	// Register the endpoints.
 	router.HandleFunc("/holdings/", holdingsHandler)
 	router.HandleFunc("/holdings/{bid_id}", holdingsHandler)
+	router.HandleFunc("/experimental", experimentalHandler)
 
 	// Start the HTTP server.
 	port := ":8080"
