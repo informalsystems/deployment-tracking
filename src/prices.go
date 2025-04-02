@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -196,8 +197,9 @@ func getAtomPrice() (float64, error) {
 // Numia API types and constants
 const (
 	NumiaAPIBaseURL = "https://osmosis.numia.xyz/tokens/v2"
-	NumiaAuthToken  = "sk_939c71118a8a46babe8c11b10ce636a4"
 )
+
+var NumiaAuthToken = os.Getenv("NUMIA_API_TOKEN")
 
 type NumiaHistoricalPrice struct {
 	Time   int64   `json:"time"`
@@ -339,6 +341,10 @@ func ComputeInitialHoldingsWithPrices(holdings *Holdings, assetData *ChainInfo, 
 }
 
 func init() {
+	if NumiaAuthToken == "" {
+		log.Fatal("NUMIA_API_TOKEN environment variable must be set")
+	}
+
 	if err := initializePriceCache(); err != nil {
 		log.Printf("Warning: Failed to fetch Skip assets: %v", err)
 	}
