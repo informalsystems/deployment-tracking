@@ -36,7 +36,7 @@ func NewMagmaQuerier(config MagmaDeploymentConfig) *MagmaQuerier {
 }
 
 func (m *MagmaQuerier) computeHoldings(assetData *ChainInfo) (*Holdings, error) {
-	nodeURL := "https://osmosis-rest.publicnode.com/cosmwasm/wasm/v1/contract/"
+	nodeURL := "https://osmosis-lcd.numia.xyz/cosmwasm/wasm/v1/contract/"
 
 	// 1. Query balance of vault shares
 	balanceQuery := map[string]interface{}{
