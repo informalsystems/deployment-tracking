@@ -8,17 +8,17 @@ import (
 type Protocol string
 
 const (
-	Osmosis          Protocol = "osmosis"
-	Nolus            Protocol = "nolus"
-	Mars             Protocol = "mars"
-	AstroportNeutron Protocol = "astroport-neutron"
-	AstroportTerra   Protocol = "astroport-terra"
-	Margined         Protocol = "margined"
-	Demex            Protocol = "demex"
-	Neptune          Protocol = "neptune"
-	Shade            Protocol = "shade"
-	WhiteWhale       Protocol = "whitewhale"
-	Inter            Protocol = "inter"
+	Osmosis          Protocol = "Osmosis"
+	Nolus            Protocol = "Nolus"
+	Mars             Protocol = "Mars"
+	AstroportNeutron Protocol = "Astroport (Neutron)"
+	AstroportTerra   Protocol = "Astroport (Terra)"
+	Margined         Protocol = "Margined"
+	Demex            Protocol = "Demex"
+	Neptune          Protocol = "Neptune"
+	Shade            Protocol = "Shade"
+	WhiteWhale       Protocol = "Whitewhale"
+	Inter            Protocol = "Inter"
 )
 
 // Core data structures
