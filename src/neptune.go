@@ -80,7 +80,7 @@ func (p NeptunePosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	}, nil
 }
 
-func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
 	receiptAddr, err := p.getPoolReceiptToken()
 	if err != nil {
 		return nil, fmt.Errorf("error getting pool receipt token: %v", err)
@@ -128,6 +128,7 @@ func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, a
 }
 
 func (p NeptunePosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	// Neptune protocol doesn't keep track of the initial holdings and yield separately
 	return &Holdings{}, nil
 }
 
