@@ -49,7 +49,7 @@ func (p DualityPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	poolData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
 		p.venuePositionConfig.PoolAddress, queryMsg)
 	if err != nil {
-		return nil, fmt.Errorf("querying pool data: %s", err)
+		return nil, fmt.Errorf("querying pool data: %w", err)
 	}
 
 	// Handle case where poolData is a list of tokens
