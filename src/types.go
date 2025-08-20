@@ -19,7 +19,8 @@ const (
 	Shade            Protocol = "Shade"
 	WhiteWhale       Protocol = "Whitewhale"
 	Inter            Protocol = "Inter"
-	Duality          Protocol = "Duality"
+  Elys             Protocol = "Elys"
+  Duality          Protocol = "Duality"
 )
 
 // Core data structures
@@ -177,6 +178,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 		return NewMarsPosition(config, venuePositionConfig)
 	case AstroportNeutron, AstroportTerra:
 		return NewAstroportPosition(config, venuePositionConfig)
+	case Elys:
+		return NewElysPosition(config, venuePositionConfig)
 	case Margined, Demex, Neptune, Shade, WhiteWhale, Inter:
 		return NewMissingPosition(config, venuePositionConfig)
 	case Duality:
@@ -216,6 +219,12 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		AssetListURL:      "https://chains.cosmos.directory/terra2",
 		AddressBalanceUrl: "https://terra-api.polkachu.com/cosmos/bank/v1beta1/balances",
 	},
+	Elys: {
+		Protocol:          Elys,
+		PoolInfoUrl:       "https://elys-rest.publicnode.com/elys-network/elys",
+		AssetListURL:      "https://chains.cosmos.directory/elys",
+		AddressBalanceUrl: "",
+  },
 	Duality: {
 		Protocol:          Duality,
 		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
@@ -480,6 +489,30 @@ var bidMap = map[int]BidPositionConfig{
 				PoolContractToken:   NOLUS_ATOM,
 				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
 			},
+		},
+	},
+	45: {
+		InitialAtomAllocation: 172000,
+		Venues: []VenuePositionConfig{
+			ElysVenuePositionConfig{
+				Address: "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:  "32768",
+			},
+		},
+	},
+	50: {
+		InitialAtomAllocation: 367300,
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14570507",
+			},
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14691901",
+      },
 		},
 	},
 	51: {
