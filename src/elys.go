@@ -181,10 +181,14 @@ func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addr
 		return nil, fmt.Errorf("no matching denom found in commitment data")
 	}
 
-	poolData, err := p.fetchPoolData()
-	if err != nil {
-		return nil, err
+	var poolData map[string]interface{}
+	if p.cachedPoolData == nil {
+		p.cachedPoolData, err = p.fetchPoolData()
+		if err != nil {
+			return nil, err
+		}
 	}
+	poolData = p.cachedPoolData
 
 	pool, ok := poolData["pool"].(map[string]interface{})
 	if !ok {
