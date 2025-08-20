@@ -241,20 +241,46 @@ func getPoolAssets(p DualityPosition) ([]Asset, error) {
 		return nil, fmt.Errorf("querying pool config: %s", err)
 	}
 
-	// Extract token_0 and token_1 denominations
-	pairData := configData.(map[string]interface{})["pair_data"].(map[string]interface{})
-	token0Denom := pairData["token_0"].(map[string]interface{})["denom"].(string)
-	token1Denom := pairData["token_1"].(map[string]interface{})["denom"].(string)
+	// Validate configData structure
+	configMap, ok := configData.(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("invalid configData format: expected map[string]interface{}")
+	}
+
+	// Validate pair_data presence and type
+	pairData, ok := configMap["pair_data"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid pair_data in configData")
+	}
+
+	// Validate token_0 and token_1 denominations
+	token0, ok := pairData["token_0"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid token_0 in pair_data")
+	}
+	token1, ok := pairData["token_1"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid token_1 in pair_data")
+	}
+
+	token0Denom, ok := token0["denom"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid denom in token_0")
+	}
+	token1Denom, ok := token1["denom"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid denom in token_1")
+	}
 
 	// Create Asset objects for token_0 and token_1
-	token0 := Asset{
+	token0Asset := Asset{
 		Denom: token0Denom,
 	}
-	token1 := Asset{
+	token1Asset := Asset{
 		Denom: token1Denom,
 	}
 
-	return []Asset{token0, token1}, nil
+	return []Asset{token0Asset, token1Asset}, nil
 }
 
 func (p DualityPosition) getLPAmount(address string, lpToken string) (int64, error) {
