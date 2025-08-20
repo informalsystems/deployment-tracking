@@ -19,7 +19,8 @@ const (
 	Shade            Protocol = "Shade"
 	WhiteWhale       Protocol = "Whitewhale"
 	Inter            Protocol = "Inter"
-	Elys             Protocol = "Elys"
+  Elys             Protocol = "Elys"
+  Duality          Protocol = "Duality"
 )
 
 // Core data structures
@@ -181,6 +182,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 		return NewElysPosition(config, venuePositionConfig)
 	case Margined, Demex, Neptune, Shade, WhiteWhale, Inter:
 		return NewMissingPosition(config, venuePositionConfig)
+	case Duality:
+		return NewDualityPosition(config, venuePositionConfig)
 	}
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
 }
@@ -221,6 +224,12 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		PoolInfoUrl:       "https://elys-rest.publicnode.com/elys-network/elys",
 		AssetListURL:      "https://chains.cosmos.directory/elys",
 		AddressBalanceUrl: "",
+  },
+	Duality: {
+		Protocol:          Duality,
+		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/neutron",
+		AddressBalanceUrl: "https://neutron-api.polkachu.com/cosmos/bank/v1beta1/balances",
 	},
 	Margined: {
 		Protocol:          Margined,
@@ -503,6 +512,15 @@ var bidMap = map[int]BidPositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 				PositionID: "14691901",
+      },
+		},
+	},
+	51: {
+		InitialAtomAllocation: 78000,
+		Venues: []VenuePositionConfig{
+			DualityVenuePositionConfig{
+				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
 			},
 		},
 	},
