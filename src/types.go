@@ -19,6 +19,7 @@ const (
 	Shade            Protocol = "Shade"
 	WhiteWhale       Protocol = "Whitewhale"
 	Inter            Protocol = "Inter"
+	Duality          Protocol = "Duality"
 )
 
 // Core data structures
@@ -178,6 +179,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 		return NewAstroportPosition(config, venuePositionConfig)
 	case Margined, Demex, Neptune, Shade, WhiteWhale, Inter:
 		return NewMissingPosition(config, venuePositionConfig)
+	case Duality:
+		return NewDualityPosition(config, venuePositionConfig)
 	}
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
 }
@@ -212,6 +215,12 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		PoolInfoUrl:       "https://terra-api.polkachu.com/cosmwasm/wasm/v1/contract",
 		AssetListURL:      "https://chains.cosmos.directory/terra2",
 		AddressBalanceUrl: "https://terra-api.polkachu.com/cosmos/bank/v1beta1/balances",
+	},
+	Duality: {
+		Protocol:          Duality,
+		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/neutron",
+		AddressBalanceUrl: "https://neutron-api.polkachu.com/cosmos/bank/v1beta1/balances",
 	},
 	Margined: {
 		Protocol:          Margined,
@@ -470,6 +479,15 @@ var bidMap = map[int]BidPositionConfig{
 				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
 				PoolContractToken:   NOLUS_ATOM,
 				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+			},
+		},
+	},
+	51: {
+		InitialAtomAllocation: 78000,
+		Venues: []VenuePositionConfig{
+			DualityVenuePositionConfig{
+				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
 			},
 		},
 	},
