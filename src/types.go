@@ -19,8 +19,8 @@ const (
 	Shade            Protocol = "Shade"
 	WhiteWhale       Protocol = "Whitewhale"
 	Inter            Protocol = "Inter"
-  Elys             Protocol = "Elys"
-  Duality          Protocol = "Duality"
+	Elys             Protocol = "Elys"
+	Duality          Protocol = "Duality"
 )
 
 // Core data structures
@@ -180,7 +180,9 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 		return NewAstroportPosition(config, venuePositionConfig)
 	case Elys:
 		return NewElysPosition(config, venuePositionConfig)
-	case Margined, Demex, Neptune, Shade, WhiteWhale, Inter:
+	case Neptune:
+		return NewNeptunePosition(config, venuePositionConfig)
+	case Margined, Demex, Shade, WhiteWhale, Inter:
 		return NewMissingPosition(config, venuePositionConfig)
 	case Duality:
 		return NewDualityPosition(config, venuePositionConfig)
@@ -224,12 +226,18 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		PoolInfoUrl:       "https://elys-rest.publicnode.com/elys-network/elys",
 		AssetListURL:      "https://chains.cosmos.directory/elys",
 		AddressBalanceUrl: "",
-  },
+	},
 	Duality: {
 		Protocol:          Duality,
 		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
 		AssetListURL:      "https://chains.cosmos.directory/neutron",
 		AddressBalanceUrl: "https://neutron-api.polkachu.com/cosmos/bank/v1beta1/balances",
+	},
+	Neptune: {
+		Protocol:          Neptune,
+		PoolInfoUrl:       "https://injective-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		AssetListURL:      "https://chains.cosmos.directory/injective",
+		AddressBalanceUrl: "",
 	},
 	Margined: {
 		Protocol:          Margined,
@@ -239,12 +247,6 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	},
 	Demex: {
 		Protocol:          Demex,
-		PoolInfoUrl:       "",
-		AssetListURL:      "",
-		AddressBalanceUrl: "",
-	},
-	Neptune: {
-		Protocol:          Neptune,
 		PoolInfoUrl:       "",
 		AssetListURL:      "",
 		AddressBalanceUrl: "",
@@ -281,12 +283,6 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 10000,
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Demex},
-		},
-	},
-	2: {
-		InitialAtomAllocation: 18000,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: Neptune},
 		},
 	},
 	3: {
@@ -512,7 +508,7 @@ var bidMap = map[int]BidPositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 				PositionID: "14691901",
-      },
+			},
 		},
 	},
 	51: {
