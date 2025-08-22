@@ -229,9 +229,9 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	},
 	Duality: {
 		Protocol:          Duality,
-		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		PoolInfoUrl:       "https://api.neutron.quokkastake.io/cosmwasm/wasm/v1/contract",
 		AssetListURL:      "https://chains.cosmos.directory/neutron",
-		AddressBalanceUrl: "https://neutron-api.polkachu.com/cosmos/bank/v1beta1/balances",
+		AddressBalanceUrl: "https://api.neutron.quokkastake.io/cosmos/bank/v1beta1/balances",
 	},
 	Neptune: {
 		Protocol:          Neptune,
@@ -273,217 +273,236 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 
 // map of bid ID to its position config
 var bidMap = map[int]BidPositionConfig{
-	0: {
-		InitialAtomAllocation: 10557,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: Margined},
-		},
-	},
-	1: {
-		InitialAtomAllocation: 10000,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: Demex},
-		},
-	},
-	3: {
-		InitialAtomAllocation: 50000,
-		Venues: []VenuePositionConfig{
-			// TODO: can't differentiate from bids 11 and 24 deployments
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportNeutron,
-				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
-				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			},
-		},
-	},
-	4: {
-		InitialAtomAllocation: 36093,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: Shade},
-		},
-	},
-	5: {
-		InitialAtomAllocation: 10000,
-		Venues: []VenuePositionConfig{
-			NolusVenuePositionConfig{
-				PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
-				PoolContractToken:   NOLUS_ST_ATOM,
-				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
-			},
-		},
-	},
-	6: {
-		InitialAtomAllocation: 3143,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: WhiteWhale},
-		},
-	},
-	7: {
-		InitialAtomAllocation: 17912,
-		Venues: []VenuePositionConfig{
-			// TODO: can't differentiate from bid 15 deployment
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportTerra,
-				PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
-				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			},
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportTerra,
-				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
-				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			},
-		},
-	},
-	// round 2 starts here
-	11: {
-		InitialAtomAllocation: 81000,
-		Venues: []VenuePositionConfig{
-			OsmosisVenuePositionConfig{
-				PoolID:     "2371",
-				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-				PositionID: "11124249",
-			},
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportNeutron,
-				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			},
-		},
-	},
-	12: {
-		InitialAtomAllocation: 33953,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: Shade},
-		},
-	},
-	14: {
-		InitialAtomAllocation: 10000,
-		Venues: []VenuePositionConfig{
-			MissingVenuePositionConfig{Protocol: WhiteWhale},
-		},
-	},
-	15: {
-		InitialAtomAllocation: 26000,
-		Venues: []VenuePositionConfig{
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportTerra,
-				PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
-				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			},
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportTerra,
-				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
-				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
-				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-			},
-		},
-	},
-	16: {
-		InitialAtomAllocation: 42000,
+	// 0: {
+	// 	InitialAtomAllocation: 10557,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: Margined},
+	// 	},
+	// },
+	// 1: {
+	// 	InitialAtomAllocation: 10000,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: Demex},
+	// 	},
+	// },
+	// 3: {
+	// 	InitialAtomAllocation: 50000,
+	// 	Venues: []VenuePositionConfig{
+	// 		// TODO: can't differentiate from bids 11 and 24 deployments
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportNeutron,
+	// 			PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
+	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	// 		},
+	// 	},
+	// },
+	// 4: {
+	// 	InitialAtomAllocation: 36093,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: Shade},
+	// 	},
+	// },
+	// 5: {
+	// 	InitialAtomAllocation: 10000,
+	// 	Venues: []VenuePositionConfig{
+	// 		NolusVenuePositionConfig{
+	// 			PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
+	// 			PoolContractToken:   NOLUS_ST_ATOM,
+	// 			Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	// 		},
+	// 	},
+	// },
+	// 6: {
+	// 	InitialAtomAllocation: 3143,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: WhiteWhale},
+	// 	},
+	// },
+	// 7: {
+	// 	InitialAtomAllocation: 17912,
+	// 	Venues: []VenuePositionConfig{
+	// 		// TODO: can't differentiate from bid 15 deployment
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportTerra,
+	// 			PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+	// 			IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+	// 			Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+	// 		},
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportTerra,
+	// 			PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+	// 			IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+	// 			Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+	// 		},
+	// 	},
+	// },
+	// // round 2 starts here
+	// 11: {
+	// 	InitialAtomAllocation: 81000,
+	// 	Venues: []VenuePositionConfig{
+	// 		OsmosisVenuePositionConfig{
+	// 			PoolID:     "2371",
+	// 			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+	// 			PositionID: "11124249",
+	// 		},
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportNeutron,
+	// 			PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	// 		},
+	// 	},
+	// },
+	// 12: {
+	// 	InitialAtomAllocation: 33953,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: Shade},
+	// 	},
+	// },
+	// 14: {
+	// 	InitialAtomAllocation: 10000,
+	// 	Venues: []VenuePositionConfig{
+	// 		MissingVenuePositionConfig{Protocol: WhiteWhale},
+	// 	},
+	// },
+	// 15: {
+	// 	InitialAtomAllocation: 26000,
+	// 	Venues: []VenuePositionConfig{
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportTerra,
+	// 			PoolAddress:      "terra1f9vmtntpjmkyhkxtlc49jcq6cv8rfz0kr06zv6efdtdgae4m9y9qlzm36t",
+	// 			IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+	// 			Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+	// 		},
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportTerra,
+	// 			PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+	// 			IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+	// 			Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+	// 		},
+	// 	},
+	// },
+	// 16: {
+	// 	InitialAtomAllocation: 42000,
+	// 	Venues: []VenuePositionConfig{
+	// 		MarsVenuePositionConfig{
+	// 			CreditAccountID: "2533",
+	// 			DepositedDenom:  NEUTRON_ATOM,
+	// 		},
+	// 	},
+	// },
+	// 17: {
+	// 	InitialAtomAllocation: 48650,
+	// 	Venues: []VenuePositionConfig{
+	// 		OsmosisVenuePositionConfig{
+	// 			PoolID:     "1283",
+	// 			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+	// 			PositionID: "11124334",
+	// 		},
+	// 	},
+	// },
+	// // round 3 starts here
+	// 18: {
+	// 	InitialAtomAllocation: 45780,
+	// 	Venues: []VenuePositionConfig{
+	// 		OsmosisVenuePositionConfig{
+	// 			PoolID:     "1283",
+	// 			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+	// 			PositionID: "11701290",
+	// 		},
+	// 	},
+	// },
+	// 19: {
+	// 	InitialAtomAllocation: 69171,
+	// 	Venues: []VenuePositionConfig{
+	// 		// TODO: populate once it gets deployed
+	// 		// OsmosisVenuePositionConfig{
+	// 		// 	PoolID:     "1283",
+	// 		// 	Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+	// 		// 	PositionID: "",
+	// 		// },
+	// 		MissingVenuePositionConfig{Protocol: Inter},
+	// 	},
+	// },
+	// 22: {
+	// 	InitialAtomAllocation: 10000,
+	// 	Venues: []VenuePositionConfig{
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportNeutron,
+	// 			PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
+	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	// 		},
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportNeutron,
+	// 			PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
+	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	// 		},
+	// 	},
+	// },
+	// 23: {
+	// 	InitialAtomAllocation: 22340,
+	// 	Venues: []VenuePositionConfig{
+	// 		NolusVenuePositionConfig{
+	// 			PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
+	// 			PoolContractToken:   NOLUS_ATOM,
+	// 			Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	// 		},
+	// 	},
+	// },
+	// 24: {
+	// 	InitialAtomAllocation: 43962,
+	// 	Venues: []VenuePositionConfig{
+	// 		MarsVenuePositionConfig{
+	// 			CreditAccountID: "3091",
+	// 			DepositedDenom:  NEUTRON_ATOM,
+	// 		},
+	// 		AstroportVenuePositionConfig{
+	// 			Protocol:         AstroportNeutron,
+	// 			PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
+	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+	// 		},
+	// 	},
+	// },
+	// 25: {
+	// 	InitialAtomAllocation: 170000,
+	// 	Venues: []VenuePositionConfig{
+	// 		OsmosisVenuePositionConfig{
+	// 			PoolID:     "1283",
+	// 			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+	// 			PositionID: "12515115",
+	// 		},
+	// 	},
+	// },
+	// 26: {
+	// 	InitialAtomAllocation: 0,
+	// 	Venues: []VenuePositionConfig{
+	// 		NolusVenuePositionConfig{
+	// 			PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
+	// 			PoolContractToken:   NOLUS_ATOM,
+	// 			Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+	// 		},
+	// 	},
+	// },
+	41: {
+		InitialAtomAllocation: 224000,
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
-				CreditAccountID: "2533",
+				CreditAccountID: "4612",
 				DepositedDenom:  NEUTRON_ATOM,
 			},
 		},
 	},
-	17: {
-		InitialAtomAllocation: 48650,
+	43: {
+		InitialAtomAllocation: 367300,
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-				PositionID: "11124334",
-			},
-		},
-	},
-	// round 3 starts here
-	18: {
-		InitialAtomAllocation: 45780,
-		Venues: []VenuePositionConfig{
-			OsmosisVenuePositionConfig{
-				PoolID:     "1283",
-				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-				PositionID: "11701290",
-			},
-		},
-	},
-	19: {
-		InitialAtomAllocation: 69171,
-		Venues: []VenuePositionConfig{
-			// TODO: populate once it gets deployed
-			// OsmosisVenuePositionConfig{
-			// 	PoolID:     "1283",
-			// 	Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-			// 	PositionID: "",
-			// },
-			MissingVenuePositionConfig{Protocol: Inter},
-		},
-	},
-	22: {
-		InitialAtomAllocation: 10000,
-		Venues: []VenuePositionConfig{
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportNeutron,
-				PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			},
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportNeutron,
-				PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			},
-		},
-	},
-	23: {
-		InitialAtomAllocation: 22340,
-		Venues: []VenuePositionConfig{
-			NolusVenuePositionConfig{
-				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
-				PoolContractToken:   NOLUS_ATOM,
-				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
-			},
-		},
-	},
-	24: {
-		InitialAtomAllocation: 43962,
-		Venues: []VenuePositionConfig{
-			MarsVenuePositionConfig{
-				CreditAccountID: "3091",
-				DepositedDenom:  NEUTRON_ATOM,
-			},
-			AstroportVenuePositionConfig{
-				Protocol:         AstroportNeutron,
-				PoolAddress:      "neutron1yem82r0wf837lfkwvcu2zxlyds5qrzwkz8alvmg0apyrjthk64gqeq2e98",
-				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-			},
-		},
-	},
-	25: {
-		InitialAtomAllocation: 170000,
-		Venues: []VenuePositionConfig{
-			OsmosisVenuePositionConfig{
-				PoolID:     "1283",
-				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-				PositionID: "12515115",
-			},
-		},
-	},
-	26: {
-		InitialAtomAllocation: 0,
-		Venues: []VenuePositionConfig{
-			NolusVenuePositionConfig{
-				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
-				PoolContractToken:   NOLUS_ATOM,
-				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+				PositionID: "14010188",
 			},
 		},
 	},
@@ -491,8 +510,10 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 172000,
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
-				Address: "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
-				PoolId:  "32768",
+				Address:  "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:   "32768",
+				LPAmount: 171724645382,
+				PoolType: Stablestake,
 			},
 		},
 	},
@@ -517,6 +538,111 @@ var bidMap = map[int]BidPositionConfig{
 			DualityVenuePositionConfig{
 				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
 				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				LPAmount:    330342489391671,
+			},
+		},
+	},
+	55: {
+		InitialAtomAllocation: 42000,
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportTerra,
+				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+				LPAmount:         19264866037,
+			},
+		},
+	},
+	57: {
+		InitialAtomAllocation: 0,
+		Venues: []VenuePositionConfig{
+			NolusVenuePositionConfig{
+				PoolContractAddress: "nolus1ueytzwqyadm6r0z8ajse7g6gzum4w3vv04qazctf8ugqrrej6n4sq027cf",
+				PoolContractToken:   NOLUS_USDC,
+				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
+				Shares:              28988735638,
+			},
+		},
+	},
+	58: {
+		InitialAtomAllocation: 101586,
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14924293",
+			},
+		},
+	},
+	59: {
+		InitialAtomAllocation: 66020,
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportTerra,
+				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+				LPAmount:         30349183715,
+			},
+		},
+	},
+	60: {
+		InitialAtomAllocation: 198000,
+		Venues: []VenuePositionConfig{
+			MarsVenuePositionConfig{
+				CreditAccountID: "5054",
+				DepositedDenom:  NEUTRON_ATOM,
+			},
+		},
+	},
+	65: {
+		InitialAtomAllocation: 8500, // 2888 ATOM and 25084 USDC ~ 8.5k ATOM
+		Venues: []VenuePositionConfig{
+			ElysVenuePositionConfig{
+				Address:  "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:   "1",
+				LPAmount: 52305580544014690236115,
+				PoolType: AMM,
+			},
+		},
+	},
+	70: {
+		InitialAtomAllocation: 36000,
+		Venues: []VenuePositionConfig{
+			DualityVenuePositionConfig{
+				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				LPAmount:    147306958149831,
+			},
+		},
+	},
+	71: {
+		InitialAtomAllocation: 144000,
+		Venues: []VenuePositionConfig{
+			MarsVenuePositionConfig{
+				CreditAccountID: "5189",
+				DepositedDenom:  NEUTRON_ATOM,
+			},
+		},
+	},
+	72: {
+		InitialAtomAllocation: 13800,
+		Venues: []VenuePositionConfig{
+			NeptuneVenuePositionConfig{
+				Denom:    INJECTIVE_ATOM,
+				Address:  "inj1up8gwq9utn4mmegfn289l5ddsgkmktncrxxe9z",
+				LPAmount: 12968316918,
+			},
+		},
+	},
+	79: {
+		InitialAtomAllocation: 54000,
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14950170",
 			},
 		},
 	},

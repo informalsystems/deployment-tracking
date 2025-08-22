@@ -6,11 +6,15 @@ import (
 	"strconv"
 )
 
-const MarketMakerAddress = "inj1nc7gjkf2mhp34a6gquhurg8qahnw5kxs5u3s4u"
+const (
+	INJECTIVE_ATOM     = "ibc/C4CFF46FD6DE35CA4CF4CE031E643C8FDC9BA4B99AE598E9B0ED98FE3A2319F9"
+	MarketMakerAddress = "inj1nc7gjkf2mhp34a6gquhurg8qahnw5kxs5u3s4u"
+)
 
 type NeptuneVenuePositionConfig struct {
-	Denom   string
-	Address string
+	Denom    string
+	Address  string
+	LPAmount int64 // LP token amount
 }
 
 func (venueConfig NeptuneVenuePositionConfig) GetProtocol() Protocol {
@@ -86,24 +90,18 @@ func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _
 		return nil, fmt.Errorf("error getting pool receipt token: %v", err)
 	}
 
-	nTokenBalance, err := p.getUserNTokenBalance(receiptAddr)
-	if err != nil {
-		return nil, fmt.Errorf("error getting user nToken balance: %v", err)
-	}
-
 	redemptionRate, err := p.calculateRedemptionRate(receiptAddr)
 	if err != nil {
 		return nil, fmt.Errorf("error calculating redemption rate: %v", err)
 	}
 
 	depositDenom := p.venuePositionConfig.Denom
-
 	tokenInfo, err := assetData.GetTokenInfo(depositDenom)
 	if err != nil {
 		return nil, fmt.Errorf("getting token info: %v", err)
 	}
 
-	adjustedAmount := float64(nTokenBalance) / math.Pow(10, float64(tokenInfo.Decimals))
+	adjustedAmount := float64(p.venuePositionConfig.LPAmount) / math.Pow(10, float64(tokenInfo.Decimals))
 	holdings := adjustedAmount * redemptionRate
 
 	usdValue, atomValue, err := getTokenValues(holdings, *tokenInfo)
@@ -224,31 +222,6 @@ func (p NeptunePosition) getPoolReceiptToken() (string, error) {
 	}
 
 	return "", fmt.Errorf("no matching pool found for denom: %s", p.venuePositionConfig.Denom)
-}
-
-func (p NeptunePosition) getUserNTokenBalance(receiptAddr string) (int64, error) {
-	queryJson := map[string]interface{}{
-		"balance": map[string]interface{}{
-			"address": p.venuePositionConfig.Address,
-		},
-	}
-
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, receiptAddr, queryJson)
-	if err != nil {
-		return 0, fmt.Errorf("querying user nToken balance: %v", err)
-	}
-
-	balanceStr, ok := data.(map[string]interface{})["balance"].(string)
-	if !ok {
-		return 0, fmt.Errorf("missing or invalid balance in response")
-	}
-
-	balance, err := strconv.ParseInt(balanceStr, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("parsing balance: %v", err)
-	}
-
-	return balance, nil
 }
 
 func (p NeptunePosition) calculateRedemptionRate(receiptAddr string) (float64, error) {

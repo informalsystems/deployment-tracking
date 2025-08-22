@@ -10,12 +10,14 @@ import (
 const (
 	NOLUS_ATOM    = "ibc/6CDD4663F2F09CD62285E2D45891FC149A3568E316CE3EBBE201A71A78A69388"
 	NOLUS_ST_ATOM = "ibc/FCFF8B19C61677F3B78E2A5AE3B4A34A8D23858D16905F253B8438B3AFD07FF8"
+	NOLUS_USDC    = "ibc/F5FABF52B54E65064B57BF6DBD8E5FAD22CEE9F4B8A57ADBB20CCD0173AA72A4"
 )
 
 type NolusVenuePositionConfig struct {
 	PoolContractAddress string
 	PoolContractToken   string
 	Address             string
+	Shares              int
 }
 
 func (venueConfig NolusVenuePositionConfig) GetProtocol() Protocol {
@@ -49,7 +51,7 @@ func (p NolusPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
-	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressBalanceShares(address) })
+	return p.computeHoldings(assetData, func() (int, error) { return p.venuePositionConfig.Shares, nil })
 }
 
 func (p NolusPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
@@ -151,27 +153,6 @@ func (p NolusPosition) getTotalPoolShares() (int, error) {
 
 	poolBalance, err := strconv.Atoi(balanceShares)
 	return poolBalance, err
-}
-
-func (p NolusPosition) getAddressBalanceShares(address string) (int, error) {
-	queryJson := map[string]interface{}{
-		"balance": struct {
-			Address string `json:"address"`
-		}{Address: address},
-	}
-
-	data, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolContractAddress, queryJson)
-	if err != nil {
-		return 0, err
-	}
-
-	balanceShares, ok := data.(map[string]interface{})["balance"].(string)
-	if !ok {
-		return 0, fmt.Errorf("invalid balance")
-	}
-
-	addressBalance, err := strconv.Atoi(balanceShares)
-	return addressBalance, err
 }
 
 func (p NolusPosition) getAddressRewardsShares(address string) (int, error) {
