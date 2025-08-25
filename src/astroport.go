@@ -12,6 +12,7 @@ type AstroportVenuePositionConfig struct {
 	Address          string
 	IncentiveAddress string
 	Protocol         Protocol
+	LPAmount         int64 // LP token amount, this is a way to track the funds deployed per bid
 }
 
 func (venueConfig AstroportVenuePositionConfig) GetProtocol() Protocol {
@@ -101,22 +102,10 @@ func (p AstroportPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
-	// First get LP token info
-	lpToken, err := GetLPToken(p)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get user's LP balance and staked amount
-	totalLPAmount, err := p.getTotalLPAmount(address, lpToken)
-	if err != nil {
-		return nil, fmt.Errorf("getting total LP amount: %s", err)
-	}
-
 	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{
 		"share": map[string]interface{}{
-			"amount": strconv.FormatInt(totalLPAmount, 10),
+			"amount": strconv.FormatInt(p.venuePositionConfig.LPAmount, 10),
 		},
 	}
 
@@ -253,68 +242,4 @@ func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, ad
 		TotalUSDC: totalValueUSD,
 		TotalAtom: totalValueATOM,
 	}, nil
-}
-
-func (p AstroportPosition) getTotalLPAmount(address string, lpToken string) (int64, error) {
-	walletBalance := int64(0)
-
-	// First try native token query
-	balanceURL := fmt.Sprintf("%s/%s", p.protocolConfig.AddressBalanceUrl, address)
-	var balanceResponse struct {
-		Balances []struct {
-			Denom  string `json:"denom"`
-			Amount string `json:"amount"`
-		} `json:"balances"`
-	}
-
-	if err := getJSON(balanceURL, &balanceResponse); err != nil {
-		return 0, fmt.Errorf("querying balance: %s", err)
-	}
-
-	// Try to find as native token
-	for _, bal := range balanceResponse.Balances {
-		if bal.Denom == lpToken {
-			walletBalance, _ = strconv.ParseInt(bal.Amount, 10, 64)
-			break
-		}
-	}
-
-	// If not found in native tokens, try as CW20
-	if walletBalance == 0 {
-		balanceQuery := map[string]interface{}{
-			"balance": map[string]interface{}{
-				"address": address,
-			},
-		}
-
-		balanceData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-			lpToken, balanceQuery)
-		if err == nil { // Only process if query succeeds
-			balanceResponse, ok := balanceData.(map[string]interface{})
-			if ok {
-				if balanceStr, ok := balanceResponse["balance"].(string); ok {
-					walletBalance, _ = strconv.ParseInt(balanceStr, 10, 64)
-				}
-			}
-		}
-		// Ignore errors as the token might not be a CW20 either
-	}
-
-	// Query staked balance
-	stakedQuery := map[string]interface{}{
-		"deposit": map[string]interface{}{
-			"lp_token": lpToken,
-			"user":     address,
-		},
-	}
-
-	stakedData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.venuePositionConfig.IncentiveAddress, stakedQuery)
-	if err != nil {
-		return 0, fmt.Errorf("querying staked balance: %s", err)
-	}
-
-	stakedBalance, _ := strconv.ParseInt(stakedData.(string), 10, 64)
-
-	return walletBalance + stakedBalance, nil
 }
