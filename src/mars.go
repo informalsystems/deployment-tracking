@@ -54,7 +54,7 @@ func (p MarsPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addr
 func (p MarsPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	// rewards are already counted-in into principal address holdings, since Mars protocol doesn't keep track of
 	// the initial holdings and yield separately
-	return p.computeHoldings(assetData, func() (int, error) { return 0, nil })
+	return &Holdings{}, nil
 }
 
 func (p MarsPosition) computeHoldings(assetData *ChainInfo, getTokenAmountFunc func() (int, error)) (*Holdings, error) {

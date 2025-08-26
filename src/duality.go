@@ -7,9 +7,9 @@ import (
 )
 
 type DualityVenuePositionConfig struct {
-	PoolAddress string // Contract address of the pool
-	Address     string
-	LPAmount    int64 // LP token amount, this is a way to track the funds deployed per bid
+	PoolAddress  string // Contract address of the pool
+	Address      string
+	ActiveShares int64 // LP token amount, this is a way to track the funds deployed per bid
 }
 
 func (venueConfig DualityVenuePositionConfig) GetProtocol() Protocol {
@@ -128,7 +128,7 @@ func (p DualityPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 
 func (p DualityPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
 	// Use LPAmount from the venue position config
-	totalLPAmount := p.venuePositionConfig.LPAmount
+	totalLPAmount := p.venuePositionConfig.ActiveShares
 
 	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{

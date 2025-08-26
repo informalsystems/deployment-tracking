@@ -12,9 +12,9 @@ const (
 )
 
 type NeptuneVenuePositionConfig struct {
-	Denom    string
-	Address  string
-	LPAmount int64 // LP token amount
+	Denom        string
+	Address      string
+	ActiveShares int64 // LP token amount
 }
 
 func (venueConfig NeptuneVenuePositionConfig) GetProtocol() Protocol {
@@ -101,7 +101,7 @@ func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _
 		return nil, fmt.Errorf("getting token info: %v", err)
 	}
 
-	adjustedAmount := float64(p.venuePositionConfig.LPAmount) / math.Pow(10, float64(tokenInfo.Decimals))
+	adjustedAmount := float64(p.venuePositionConfig.ActiveShares) / math.Pow(10, float64(tokenInfo.Decimals))
 	holdings := adjustedAmount * redemptionRate
 
 	usdValue, atomValue, err := getTokenValues(holdings, *tokenInfo)

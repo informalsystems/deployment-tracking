@@ -22,10 +22,10 @@ const (
 )
 
 type ElysVenuePositionConfig struct {
-	PoolId   string
-	Address  string
-	LPAmount float64
-	PoolType PoolType // Enum to specify the pool type
+	PoolId       string
+	Address      string
+	ActiveShares float64  // lp token amount, this is a way to track the funds deployed per bid
+	PoolType     PoolType // Enum to specify the pool type
 }
 
 func (venueConfig ElysVenuePositionConfig) GetProtocol() Protocol {
@@ -219,7 +219,7 @@ func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addr
 }
 
 func (p ElysPosition) computeStablestakePrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
-	amount := p.venuePositionConfig.LPAmount
+	amount := p.venuePositionConfig.ActiveShares
 
 	poolData, err := p.fetchStablestakePoolData()
 	if err != nil {
@@ -277,7 +277,7 @@ func (p ElysPosition) computeStablestakePrincipalHoldings(assetData *ChainInfo, 
 
 func (p ElysPosition) computeAMMPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
 	// Use LPAmount from the venue position config
-	amount := p.venuePositionConfig.LPAmount
+	amount := p.venuePositionConfig.ActiveShares
 	if amount == 0 {
 		return nil, fmt.Errorf("LPAmount is zero, no holdings to compute")
 	}

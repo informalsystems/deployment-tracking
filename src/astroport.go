@@ -12,7 +12,7 @@ type AstroportVenuePositionConfig struct {
 	Address          string
 	IncentiveAddress string
 	Protocol         Protocol
-	LPAmount         int64 // LP token amount, this is a way to track the funds deployed per bid
+	ActiveShares     int64 // LP token amount, this is a way to track the funds deployed per bid
 }
 
 func (venueConfig AstroportVenuePositionConfig) GetProtocol() Protocol {
@@ -105,7 +105,7 @@ func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo,
 	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{
 		"share": map[string]interface{}{
-			"amount": strconv.FormatInt(p.venuePositionConfig.LPAmount, 10),
+			"amount": strconv.FormatInt(p.venuePositionConfig.ActiveShares, 10),
 		},
 	}
 

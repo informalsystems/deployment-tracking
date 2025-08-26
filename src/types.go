@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 // Protocol type enum
@@ -46,8 +47,9 @@ func (c *ChainInfo) GetTokenInfo(denom string) (*ChainTokenInfo, error) {
 
 // BidPositionConfig holds configuration for all venue positions of the given bid.
 type BidPositionConfig struct {
-	InitialAtomAllocation int
-	Venues                []VenuePositionConfig
+	InitialAtomAllocation int                   `json:"initial_atom_allocation"`
+	Venues                []VenuePositionConfig `json:"venues"`
+	Withdrawals           []Withdrawal          `json:"withdrawals"`
 }
 
 // VenuePositionConfig holds the configuration for
@@ -97,6 +99,13 @@ type BidHoldings struct {
 	BidId                 int             `json:"bid_id"`
 	InitialAtomAllocation int             `json:"initial_atom_allocation"`
 	Holdings              []VenueHoldings `json:"holdings"`
+	Withdrawals           []Withdrawal    `json:"withdrawals"`
+}
+
+type Withdrawal struct {
+	Date                time.Time `json:"date"`                  // Date of the withdrawal
+	WithdrawnAtomAmount float64   `json:"withdrawn_atom_amount"` // Amount of ATOM withdrawn
+	WithdrawnShares     float64   `json:"withdrawn_shares"`      // Amount of shares withdrawn (if applicable)
 }
 
 // ExperimentalDeploymentQueryInterface defines the methods required for experimental deployments
@@ -305,10 +314,10 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 172000,
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
-				Address:  "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
-				PoolId:   "32768",
-				LPAmount: 171724645382,
-				PoolType: Stablestake,
+				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:       "32768",
+				ActiveShares: 171724645382,
+				PoolType:     Stablestake,
 			},
 		},
 	},
@@ -331,9 +340,9 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 78000,
 		Venues: []VenuePositionConfig{
 			DualityVenuePositionConfig{
-				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
-				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-				LPAmount:    330342489391671,
+				PoolAddress:  "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:      "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares: 330342489391671,
 			},
 		},
 	},
@@ -345,7 +354,7 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
 				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-				LPAmount:         19264866037,
+				ActiveShares:     19264866037,
 			},
 		},
 	},
@@ -356,7 +365,7 @@ var bidMap = map[int]BidPositionConfig{
 				PoolContractAddress: "nolus1ueytzwqyadm6r0z8ajse7g6gzum4w3vv04qazctf8ugqrrej6n4sq027cf",
 				PoolContractToken:   NOLUS_USDC,
 				Address:             "nolus1u74s6nuqgulf9kuezjt9q8r8ghx0kcvcl96fx63nk29df25n2u5swmz3g6",
-				Shares:              28988735638,
+				ActiveShares:        28988735638,
 			},
 		},
 	},
@@ -378,7 +387,7 @@ var bidMap = map[int]BidPositionConfig{
 				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
 				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-				LPAmount:         30349183715,
+				ActiveShares:     30349183715,
 			},
 		},
 	},
@@ -395,10 +404,10 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 0, // 2888 ATOM and 25084 USDC ~ 8.5k ATOM
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
-				Address:  "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
-				PoolId:   "1",
-				LPAmount: 52305580544014690236115,
-				PoolType: AMM,
+				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:       "1",
+				ActiveShares: 52305580544014690236115,
+				PoolType:     AMM,
 			},
 		},
 	},
@@ -406,9 +415,9 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 36000,
 		Venues: []VenuePositionConfig{
 			DualityVenuePositionConfig{
-				PoolAddress: "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
-				Address:     "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-				LPAmount:    147306958149831,
+				PoolAddress:  "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:      "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares: 147306958149831,
 			},
 		},
 	},
@@ -425,9 +434,19 @@ var bidMap = map[int]BidPositionConfig{
 		InitialAtomAllocation: 13800,
 		Venues: []VenuePositionConfig{
 			NeptuneVenuePositionConfig{
-				Denom:    INJECTIVE_ATOM,
-				Address:  "inj1up8gwq9utn4mmegfn289l5ddsgkmktncrxxe9z",
-				LPAmount: 12968316918,
+				Denom:        INJECTIVE_ATOM,
+				Address:      "inj1up8gwq9utn4mmegfn289l5ddsgkmktncrxxe9z",
+				ActiveShares: 12968316918,
+			},
+		},
+	},
+	77: {
+		InitialAtomAllocation: 0, // 749 atom, 609302 arch
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "3111",
+				Address:    "osmo16cuqr48efufwf78gfk2yfjs08av5levpe4ge2zynrkrxu98gn2zs7r9jh4", // vortex contract
+				PositionID: "14958520",
 			},
 		},
 	},

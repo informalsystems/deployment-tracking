@@ -178,11 +178,7 @@ func (p UxPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addres
 
 func (p UxPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	// Ux does not have separate reward holdings
-	return &Holdings{
-		Balances:  []Asset{},
-		TotalUSDC: 0,
-		TotalAtom: 0,
-	}, nil
+	return &Holdings{}, nil
 }
 
 func (p UxPosition) getMarketSummary() (map[string]interface{}, error) {

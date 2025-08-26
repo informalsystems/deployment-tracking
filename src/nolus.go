@@ -17,7 +17,7 @@ type NolusVenuePositionConfig struct {
 	PoolContractAddress string
 	PoolContractToken   string
 	Address             string
-	Shares              int
+	ActiveShares        int
 }
 
 func (venueConfig NolusVenuePositionConfig) GetProtocol() Protocol {
@@ -51,7 +51,7 @@ func (p NolusPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
-	return p.computeHoldings(assetData, func() (int, error) { return p.venuePositionConfig.Shares, nil })
+	return p.computeHoldings(assetData, func() (int, error) { return p.venuePositionConfig.ActiveShares, nil })
 }
 
 func (p NolusPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
