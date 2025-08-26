@@ -21,6 +21,7 @@ const (
 	Inter            Protocol = "Inter"
 	Elys             Protocol = "Elys"
 	Duality          Protocol = "Duality"
+	Ux               Protocol = "Ux"
 )
 
 // Core data structures
@@ -186,6 +187,8 @@ func NewDexProtocolFromConfig(config ProtocolConfig, venuePositionConfig VenuePo
 		return NewMissingPosition(config, venuePositionConfig)
 	case Duality:
 		return NewDualityPosition(config, venuePositionConfig)
+	case Ux:
+		return NewUxPosition(config, venuePositionConfig)
 	}
 	return nil, fmt.Errorf("unsupported protocol: %s", config.Protocol)
 }
@@ -267,6 +270,12 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 		Protocol:          Inter,
 		PoolInfoUrl:       "",
 		AssetListURL:      "",
+		AddressBalanceUrl: "",
+	},
+	Ux: {
+		Protocol:          Ux,
+		PoolInfoUrl:       "https://umee-api.polkachu.com/umee",
+		AssetListURL:      "https://chains.cosmos.directory/umee",
 		AddressBalanceUrl: "",
 	},
 }
@@ -429,6 +438,15 @@ var bidMap = map[int]BidPositionConfig{
 				PoolID:     "1283",
 				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
 				PositionID: "14950170",
+			},
+		},
+	},
+	67: {
+		InitialAtomAllocation: 30000,
+		Venues: []VenuePositionConfig{
+			UxVenuePositionConfig{
+				Address: "umee18zw3ud29vtxqvlljrnnexphtn62yccc700lek432cy9ngv4n4kgqupkr02",
+				Denom:   UX_ATOM,
 			},
 		},
 	},
