@@ -119,7 +119,7 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 				holdings = nil
 			}
 
-			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, InitialAtomAllocation: bidConfig.InitialAtomAllocation, Holdings: holdings, Withdrawals: bidConfig.Withdrawals})
+			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, InitialAllocation: bidConfig.InitialAllocation, Holdings: holdings, Withdrawals: bidConfig.Withdrawals})
 		}
 
 		jsonData, err := json.MarshalIndent(allHoldings, "", "  ")

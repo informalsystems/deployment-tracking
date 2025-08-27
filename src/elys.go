@@ -208,6 +208,14 @@ func (p ElysPosition) computeAMMTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	switch p.venuePositionConfig.PoolType {
 	case Stablestake:
 		return p.computeStablestakePrincipalHoldings(assetData, address)
@@ -343,7 +351,16 @@ func (p ElysPosition) computeAMMPrincipalHoldings(assetData *ChainInfo, _ string
 	}, nil
 }
 
+// We can only calculate rewards per address, not per bid.
 func (p ElysPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	rewardDenoms := []string{UsdcRewardDenomForQuery, UedenRewardDenom}
 
 	var rewardAssets []Asset

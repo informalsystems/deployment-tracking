@@ -127,6 +127,14 @@ func (p DualityPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p DualityPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	// Use LPAmount from the venue position config
 	totalLPAmount := p.venuePositionConfig.ActiveShares
 

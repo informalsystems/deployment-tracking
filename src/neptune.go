@@ -85,6 +85,14 @@ func (p NeptunePosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p NeptunePosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	receiptAddr, err := p.getPoolReceiptToken()
 	if err != nil {
 		return nil, fmt.Errorf("error getting pool receipt token: %v", err)

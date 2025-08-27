@@ -54,11 +54,20 @@ func (p NolusPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, add
 	return p.computeHoldings(assetData, func() (int, error) { return p.venuePositionConfig.ActiveShares, nil })
 }
 
+// We can only calculate rewards per address, not per bid.
 func (p NolusPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
 	return p.computeHoldings(assetData, func() (int, error) { return p.getAddressRewardsShares(address) })
 }
 
 func (p NolusPosition) computeHoldings(assetData *ChainInfo, getSharesFunc func() (int, error)) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	poolToken := p.venuePositionConfig.PoolContractToken
 
 	tokenInfo, ok := assetData.Tokens[poolToken]

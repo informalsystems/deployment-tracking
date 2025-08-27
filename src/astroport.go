@@ -102,6 +102,14 @@ func (p AstroportPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 }
 
 func (p AstroportPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{
 		"share": map[string]interface{}{
@@ -173,7 +181,16 @@ func GetLPToken(p AstroportPosition) (string, error) {
 	return lpToken, nil
 }
 
+// We can only calculate rewards per address, not per bid.
 func (p AstroportPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	// First get LP token info
 	lpToken, err := GetLPToken(p)
 	if err != nil {
