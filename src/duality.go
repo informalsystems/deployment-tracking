@@ -7,8 +7,9 @@ import (
 )
 
 type DualityVenuePositionConfig struct {
-	PoolAddress string // Contract address of the pool
-	Address     string
+	PoolAddress  string // Contract address of the pool
+	Address      string
+	ActiveShares int64 // LP token amount, this is a way to track the funds deployed per bid
 }
 
 func (venueConfig DualityVenuePositionConfig) GetProtocol() Protocol {
@@ -125,18 +126,17 @@ func (p DualityPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	}, nil
 }
 
-func (p DualityPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
-	// First get LP token info
-	lpToken, err := getLPToken(p)
-	if err != nil {
-		return nil, err
+func (p DualityPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
 	}
 
-	// Get user's LP balance
-	totalLPAmount, err := p.getLPAmount(address, lpToken)
-	if err != nil {
-		return nil, fmt.Errorf("getting total LP amount: %s", err)
-	}
+	// Use LPAmount from the venue position config
+	totalLPAmount := p.venuePositionConfig.ActiveShares
 
 	// Check what share of the pool the LP amounts correspond to
 	withdrawQuery := map[string]interface{}{
@@ -151,7 +151,7 @@ func (p DualityPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, a
 		return nil, fmt.Errorf("simulating withdrawal: %s", err)
 	}
 
-	// Directly cast the response to []interface{}s
+	// Directly cast the response to []interface{}
 	amounts, ok := withdrawData.([]interface{})
 	if !ok {
 		return nil, fmt.Errorf("unexpected data format: expected an array of token amounts")
@@ -215,21 +215,6 @@ func (p DualityPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, addr
 	return &Holdings{}, nil
 }
 
-func getLPToken(p DualityPosition) (string, error) {
-	configQuery := map[string]interface{}{
-		"get_config": map[string]interface{}{},
-	}
-
-	configData, err := QuerySmartContractData(p.protocolConfig.PoolInfoUrl,
-		p.venuePositionConfig.PoolAddress, configQuery)
-	if err != nil {
-		return "", fmt.Errorf("querying pool config: %s", err)
-	}
-
-	lpToken := (configData.(map[string]interface{}))["lp_denom"].(string)
-	return lpToken, nil
-}
-
 func getPoolAssets(p DualityPosition) ([]Asset, error) {
 	configQuery := map[string]interface{}{
 		"get_config": map[string]interface{}{},
@@ -281,30 +266,4 @@ func getPoolAssets(p DualityPosition) ([]Asset, error) {
 	}
 
 	return []Asset{token0Asset, token1Asset}, nil
-}
-
-func (p DualityPosition) getLPAmount(address string, lpToken string) (int64, error) {
-	walletBalance := int64(0)
-
-	balanceURL := fmt.Sprintf("%s/%s", p.protocolConfig.AddressBalanceUrl, address)
-	var balanceResponse struct {
-		Balances []struct {
-			Denom  string `json:"denom"`
-			Amount string `json:"amount"`
-		} `json:"balances"`
-	}
-
-	if err := getJSON(balanceURL, &balanceResponse); err != nil {
-		return 0, fmt.Errorf("querying balance: %s", err)
-	}
-
-	// Try to find as native token
-	for _, bal := range balanceResponse.Balances {
-		if bal.Denom == lpToken {
-			walletBalance, _ = strconv.ParseInt(bal.Amount, 10, 64)
-			break
-		}
-	}
-
-	return walletBalance, nil
 }

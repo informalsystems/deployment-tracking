@@ -14,9 +14,18 @@ const (
 	UsdcPoolId              = math.MaxInt16
 )
 
+type PoolType string
+
+const (
+	Stablestake PoolType = "stablestake"
+	AMM         PoolType = "amm"
+)
+
 type ElysVenuePositionConfig struct {
-	PoolId  string
-	Address string
+	PoolId       string
+	Address      string
+	ActiveShares float64  // lp token amount, this is a way to track the funds deployed per bid
+	PoolType     PoolType // Enum to specify the pool type
 }
 
 func (venueConfig ElysVenuePositionConfig) GetProtocol() Protocol {
@@ -48,29 +57,19 @@ func NewElysPosition(config ProtocolConfig, venuePositionConfig VenuePositionCon
 	}, nil
 }
 
-func (p ElysPosition) fetchPoolData() (map[string]interface{}, error) {
-	poolURL := fmt.Sprintf("%s/stablestake/pool/%s", p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolId)
-
-	resp, err := http.Get(poolURL)
-	if err != nil {
-		return nil, fmt.Errorf("fetching pool info: %v", err)
+func (p ElysPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
+	switch p.venuePositionConfig.PoolType {
+	case Stablestake:
+		return p.computeStablestakeTVL(assetData)
+	case AMM:
+		return p.computeAMMTVL(assetData)
+	default:
+		return nil, fmt.Errorf("unsupported pool type: %s", p.venuePositionConfig.PoolType)
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching pool info: status %d", resp.StatusCode)
-	}
-
-	var poolData map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&poolData); err != nil {
-		return nil, fmt.Errorf("decoding pool response: %v", err)
-	}
-
-	return poolData, nil
 }
 
-func (p ElysPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
-	poolData, err := p.fetchPoolData()
+func (p ElysPosition) computeStablestakeTVL(assetData *ChainInfo) (*Holdings, error) {
+	poolData, err := p.fetchStablestakePoolData()
 	if err != nil {
 		return nil, err
 	}
@@ -123,65 +122,114 @@ func (p ElysPosition) ComputeTVL(assetData *ChainInfo) (*Holdings, error) {
 	}, nil
 }
 
-func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
-	commitmentURL := fmt.Sprintf("%s/commitment/committed_tokens_locked/%s", p.protocolConfig.PoolInfoUrl, address)
-
-	resp, err := http.Get(commitmentURL)
+func (p ElysPosition) computeAMMTVL(assetData *ChainInfo) (*Holdings, error) {
+	// Fetch AMM pool data
+	poolData, err := p.fetchAMMPoolData()
 	if err != nil {
-		return nil, fmt.Errorf("fetching commitment data: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching commitment data: status %d", resp.StatusCode)
+		return nil, fmt.Errorf("fetching AMM pool data: %v", err)
 	}
 
-	var commitmentData map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&commitmentData); err != nil {
-		return nil, fmt.Errorf("decoding commitment response: %v", err)
-	}
-
-	totalCommitted, ok := commitmentData["total_committed"].([]interface{})
+	// Extract pool assets
+	pool, ok := poolData["pool"].(map[string]interface{})
 	if !ok {
-		return nil, fmt.Errorf("missing or invalid total_committed in commitment data")
+		return nil, fmt.Errorf("missing or invalid pool data")
 	}
 
-	poolId, err := strconv.ParseUint(p.venuePositionConfig.PoolId, 10, 64)
-	if err != nil {
-		return nil, fmt.Errorf("parsing PoolId: %v", err)
+	poolAssetsData, ok := pool["pool_assets"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid pool_assets in pool data")
 	}
 
-	shareDenom := GetShareDenomForPool(poolId)
+	var poolAssets []Asset
+	var usdTotal, atomTotal float64
 
-	var amount int64
-	for _, committed := range totalCommitted {
-		committedMap, ok := committed.(map[string]interface{})
+	// Iterate through each token in the pool
+	for _, asset := range poolAssetsData {
+		poolAsset, ok := asset.(map[string]interface{}) // Renamed to poolAsset
 		if !ok {
-			continue
+			return nil, fmt.Errorf("invalid asset data format")
 		}
 
-		denom, ok := committedMap["denom"].(string)
-		if !ok || denom != shareDenom {
-			continue
-		}
-
-		amountStr, ok := committedMap["amount"].(string)
+		token, ok := poolAsset["token"].(map[string]interface{})
 		if !ok {
-			continue
+			return nil, fmt.Errorf("missing or invalid token data in asset")
 		}
 
-		amount, err = strconv.ParseInt(amountStr, 10, 64)
+		amountStr, ok := token["amount"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid amount in token data")
+		}
+
+		denom, ok := token["denom"].(string)
+		if !ok {
+			return nil, fmt.Errorf("missing or invalid denom in token data")
+		}
+
+		// Parse the amount
+		amount, err := strconv.ParseInt(amountStr, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("parsing amount: %v", err)
+			return nil, fmt.Errorf("parsing token amount: %v", err)
 		}
-		break
+
+		// Get token info
+		tokenInfo, err := assetData.GetTokenInfo(denom)
+		if err != nil {
+			return nil, fmt.Errorf("getting token info for denom %s: %v", denom, err)
+		}
+
+		// Calculate adjusted amount
+		adjustedAmount := float64(amount) / math.Pow(10, float64(tokenInfo.Decimals))
+
+		// Calculate USD and ATOM values
+		usdValue, atomValue, err := getTokenValues(adjustedAmount, *tokenInfo)
+		if err != nil {
+			return nil, fmt.Errorf("calculating token values for denom %s: %v", denom, err)
+		}
+
+		// Add to total values
+		usdTotal += usdValue
+		atomTotal += atomValue
+
+		// Add to pool assets
+		poolAssets = append(poolAssets, Asset{
+			Denom:       denom,
+			Amount:      adjustedAmount,
+			USDValue:    usdValue,
+			DisplayName: tokenInfo.Display,
+		})
 	}
 
-	if amount == 0 {
-		return nil, fmt.Errorf("no matching denom found in commitment data")
+	// Return holdings
+	return &Holdings{
+		Balances:  poolAssets,
+		TotalUSDC: usdTotal,
+		TotalAtom: atomTotal,
+	}, nil
+}
+
+func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
 	}
 
-	poolData, err := p.fetchPoolData()
+	switch p.venuePositionConfig.PoolType {
+	case Stablestake:
+		return p.computeStablestakePrincipalHoldings(assetData, address)
+	case AMM:
+		return p.computeAMMPrincipalHoldings(assetData, address)
+	default:
+		return nil, fmt.Errorf("unsupported pool type: %s", p.venuePositionConfig.PoolType)
+	}
+}
+
+func (p ElysPosition) computeStablestakePrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
+	amount := p.venuePositionConfig.ActiveShares
+
+	poolData, err := p.fetchStablestakePoolData()
 	if err != nil {
 		return nil, err
 	}
@@ -221,7 +269,7 @@ func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addr
 
 	holdingAssets := []Asset{
 		{
-			Denom:       shareDenom,
+			Denom:       depositDenom,
 			Amount:      holdings,
 			USDValue:    usdValue,
 			DisplayName: tokenInfo.Display,
@@ -235,7 +283,84 @@ func (p ElysPosition) ComputeAddressPrincipalHoldings(assetData *ChainInfo, addr
 	}, nil
 }
 
+func (p ElysPosition) computeAMMPrincipalHoldings(assetData *ChainInfo, _ string) (*Holdings, error) {
+	// Use LPAmount from the venue position config
+	amount := p.venuePositionConfig.ActiveShares
+	if amount == 0 {
+		return nil, fmt.Errorf("LPAmount is zero, no holdings to compute")
+	}
+
+	// Fetch AMM pool data
+	poolData, err := p.fetchAMMPoolData()
+	if err != nil {
+		return nil, fmt.Errorf("fetching AMM pool data: %v", err)
+	}
+
+	// Extract lp_token_price from the pool data
+	extraInfo, ok := poolData["extra_info"].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid extra_info in AMM pool data")
+	}
+
+	lpTokenPriceStr, ok := extraInfo["lp_token_price"].(string)
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid lp_token_price in AMM pool data")
+	}
+
+	lpTokenPrice, err := strconv.ParseFloat(lpTokenPriceStr, 64)
+	if err != nil {
+		return nil, fmt.Errorf("parsing lp_token_price: %v", err)
+	}
+
+	// the total price of the LP tokens in USD (we assume for all pools is expressed in USDC?)
+	usdcDenom := "ibc/F082B65C88E4B6D5EF1DB243CDA1D331D002759E938A0F5CD3FFDC5D53B3E349"
+
+	// Get token info for the deposited denom
+	tokenInfo, err := assetData.GetTokenInfo(usdcDenom)
+	if err != nil {
+		return nil, fmt.Errorf("getting token info: %v", err)
+	}
+
+	// Calculate holdings
+	// This share is expressed in 10**18 units and it's the share of the pool.
+	// It can be multiplied by the LP token price to understand the USD position value.
+	adjustedAmount := float64(amount) / math.Pow(10, 18)
+	holdings := adjustedAmount * lpTokenPrice
+
+	// Calculate USD and ATOM values
+	usdValue, atomValue, err := getTokenValues(holdings, *tokenInfo)
+	if err != nil {
+		return nil, fmt.Errorf("calculating token values: %v", err)
+	}
+
+	// Create holding assets
+	holdingAssets := []Asset{
+		{
+			Denom:       usdcDenom,
+			Amount:      holdings,
+			USDValue:    usdValue,
+			DisplayName: tokenInfo.Display,
+		},
+	}
+
+	// Return holdings
+	return &Holdings{
+		Balances:  holdingAssets,
+		TotalUSDC: usdValue,
+		TotalAtom: atomValue,
+	}, nil
+}
+
+// We can only calculate rewards per address, not per bid.
 func (p ElysPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address string) (*Holdings, error) {
+	if p.venuePositionConfig.ActiveShares == 0 {
+		return &Holdings{
+			Balances:  []Asset{},
+			TotalUSDC: 0,
+			TotalAtom: 0,
+		}, nil
+	}
+
 	rewardDenoms := []string{UsdcRewardDenomForQuery, UedenRewardDenom}
 
 	var rewardAssets []Asset
@@ -322,9 +447,48 @@ func (p ElysPosition) ComputeAddressRewardHoldings(assetData *ChainInfo, address
 	}, nil
 }
 
-func GetShareDenomForPool(poolId uint64) string {
-	if poolId == UsdcPoolId {
-		return "stablestake/share"
+func (p ElysPosition) fetchStablestakePoolData() (map[string]interface{}, error) {
+	poolURL := fmt.Sprintf("%s/stablestake/pool/%s", p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolId)
+
+	resp, err := http.Get(poolURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching stablestake pool info: %v", err)
 	}
-	return "stablestake/share/pool/" + strconv.FormatUint(poolId, 10)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching stablestake pool info: status %d", resp.StatusCode)
+	}
+
+	var poolData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&poolData); err != nil {
+		return nil, fmt.Errorf("decoding stablestake pool response: %v", err)
+	}
+
+	return poolData, nil
+}
+
+func (p ElysPosition) fetchAMMPoolData() (map[string]interface{}, error) {
+	// Construct the URL for querying the AMM pool
+	poolURL := fmt.Sprintf("%s/amm/pool/%s/%s", p.protocolConfig.PoolInfoUrl, p.venuePositionConfig.PoolId, "1")
+
+	// Make the HTTP GET request
+	resp, err := http.Get(poolURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetching AMM pool info: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for a valid HTTP status code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching AMM pool info: status %d", resp.StatusCode)
+	}
+
+	// Decode the JSON response into a map
+	var poolData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&poolData); err != nil {
+		return nil, fmt.Errorf("decoding AMM pool response: %v", err)
+	}
+
+	return poolData, nil
 }

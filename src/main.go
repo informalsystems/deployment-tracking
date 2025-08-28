@@ -16,7 +16,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = 26
+	BidId = 71
 )
 
 // Global cache instance (cache duration: 30 minutes)
@@ -119,7 +119,7 @@ func holdingsHandler(w http.ResponseWriter, r *http.Request) {
 				holdings = nil
 			}
 
-			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, InitialAtomAllocation: bidConfig.InitialAtomAllocation, Holdings: holdings})
+			allHoldings = append(allHoldings, BidHoldings{BidId: bidId, InitialAllocation: bidConfig.InitialAllocation, Holdings: holdings, Withdrawals: bidConfig.Withdrawals})
 		}
 
 		jsonData, err := json.MarshalIndent(allHoldings, "", "  ")
