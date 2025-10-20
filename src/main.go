@@ -16,7 +16,7 @@ import (
 // Constants
 const (
 	Debug = true
-	BidId = 71
+	BidId = 60
 )
 
 // Global cache instance (cache duration: 30 minutes)
