@@ -1146,26 +1146,25 @@ var bidMap = map[int]BidPositionConfig{
 			},
 		},
 	},
-	//todo: check what happened with compounding on 78
-	// 78: {
-	// 	InitialAllocation: 10000,
-	// 	Venues: []VenuePositionConfig{
-	// 		AstroportVenuePositionConfig{
-	// 			Protocol:         AstroportNeutron,
-	// 			PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
-	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	// 			ActiveShares:     0,
-	// 		},
-	// 		AstroportVenuePositionConfig{
-	// 			Protocol:         AstroportNeutron,
-	// 			PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
-	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	// 			ActiveShares:     0,
-	// 		},
-	// 	},
-	// },
+	78: {
+		InitialAllocation: []AssetInfo{{Amount: 2396, DisplayName: "AMATOM"}, {Amount: 813, DisplayName: "STATOM"}, {Amount: 1121, DisplayName: "DATOM"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     1179277102,
+			},
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     1019349925,
+			},
+		},
+	},
 	79: {
 		InitialAllocation: []AssetInfo{{Amount: 46900, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
@@ -1182,6 +1181,7 @@ var bidMap = map[int]BidPositionConfig{
 			MissingVenuePositionConfig{Protocol: Pryzm},
 		},
 	},
+	// round 10 starts here
 	82: {
 		InitialAllocation: []AssetInfo{{Amount: 32465, DisplayName: "ATOM"}, {Amount: 34137, DisplayName: "stATOM"}},
 		Venues: []VenuePositionConfig{
@@ -1235,28 +1235,29 @@ var bidMap = map[int]BidPositionConfig{
 			},
 		},
 	},
-	// 87: {
-	// 	InitialAllocation: []AssetInfo{{Amount: , DisplayName: "ATOM"}, {Amount: , DisplayName: "STATOM"}},
-	// 	Venues: []VenuePositionConfig{
-	// 		OsmosisVenuePositionConfig{
-	// 			PoolID:     "1283",
-	// 			Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
-	// 			PositionID: "",
-	// 		},
-	// 	},
-	// },
-	// 88: {
-	// 	InitialAllocation: []AssetInfo{{Amount: 190000, DisplayName: "ATOM"},
-	// 	Venues: []VenuePositionConfig{
-	// 		AstroportVenuePositionConfig{
-	// 			Protocol:         AstroportNeutron,
-	// 			PoolAddress:      "neutron1fpfuj44utw2zgf2v92z4m3yd3npzvd2kc0lvnq5wfgsa8v523hcspfdk7k",
-	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
-	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	// 			ActiveShares:     0,
-	// 		},
-	// 	},
-	// },
+	// round 11 starts here
+	87: {
+		InitialAllocation: []AssetInfo{{Amount: 106866.475528, DisplayName: "ATOM"}, {Amount: 118500, DisplayName: "STATOM"}},
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "15045670",
+			},
+		},
+	},
+	88: {
+		InitialAllocation: []AssetInfo{{Amount: 190000, DisplayName: "ATOM"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1fpfuj44utw2zgf2v92z4m3yd3npzvd2kc0lvnq5wfgsa8v523hcspfdk7k",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     734834880492499,
+			},
+		},
+	},
 	89: {
 		InitialAllocation: []AssetInfo{{Amount: 1091861, DisplayName: "NTRN"}, {Amount: 57000, DisplayName: "USDC"}},
 		Venues: []VenuePositionConfig{
@@ -1280,4 +1281,5 @@ var bidMap = map[int]BidPositionConfig{
 			},
 		},
 	},
+	// round 12 starts here
 }
