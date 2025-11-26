@@ -48,7 +48,7 @@ func (c *ChainInfo) GetTokenInfo(denom string) (*ChainTokenInfo, error) {
 
 // BidPositionConfig holds configuration for all venue positions of the given bid.
 type BidPositionConfig struct {
-	InitialAllocation int                   `json:"initial_allocation"`
+	InitialAllocation []AssetInfo           `json:"initial_allocation"`
 	Venues            []VenuePositionConfig `json:"venues"`
 	Withdrawals       []Withdrawal          `json:"withdrawals"`
 }
@@ -82,6 +82,11 @@ type Asset struct {
 	DisplayName string  `json:"display_name,omitempty"`
 }
 
+type AssetInfo struct {
+	Amount      float64 `json:"amount"`
+	DisplayName string  `json:"display_name,omitempty"`
+}
+
 type Holdings struct {
 	Balances  []Asset `json:"balances"`
 	TotalUSDC float64 `json:"total_usdc"`
@@ -98,16 +103,16 @@ type VenueHoldings struct {
 
 type BidHoldings struct {
 	BidId             int             `json:"bid_id"`
-	InitialAllocation int             `json:"initial_allocation"`
+	InitialAllocation []AssetInfo     `json:"initial_allocation"`
 	Holdings          []VenueHoldings `json:"holdings"`
 	Withdrawals       []Withdrawal    `json:"withdrawals"`
 }
 
 type Withdrawal struct {
-	Date            time.Time `json:"date"`              // Date of the withdrawal
-	WithdrawnAmount float64   `json:"withdrawn_amount"`  // Amount of withdrawal
-	WithdrawnShares float64   `json:"withdrawn_shares"`  // Amount of shares withdrawn (if applicable)
-	CompoundedBidId int       `json:"compounded_bid_id"` // ID of the compounded bid
+	Date            time.Time   `json:"date"`              // Date of the withdrawal
+	WithdrawnAmount []AssetInfo `json:"withdrawn_amount"`  // Amount of withdrawal
+	WithdrawnShares float64     `json:"withdrawn_shares"`  // Amount of shares withdrawn (if applicable)
+	CompoundedBidId int         `json:"compounded_bid_id"` // ID of the compounded bid
 }
 
 // ExperimentalDeploymentQueryInterface defines the methods required for experimental deployments
@@ -219,7 +224,7 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	},
 	Mars: {
 		Protocol:          Mars,
-		PoolInfoUrl:       "https://neutron-api.polkachu.com/cosmwasm/wasm/v1/contract",
+		PoolInfoUrl:       "https://rest-lb.neutron.org/cosmwasm/wasm/v1/contract",
 		AssetListURL:      "https://chains.cosmos.directory/neutron",
 		AddressBalanceUrl: "",
 	},
@@ -237,7 +242,7 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 	},
 	Elys: {
 		Protocol:          Elys,
-		PoolInfoUrl:       "https://elys-rest.publicnode.com/elys-network/elys",
+		PoolInfoUrl:       "https://api.elys.network/elys-network/elys",
 		AssetListURL:      "https://chains.cosmos.directory/elys",
 		AddressBalanceUrl: "",
 	},
@@ -300,27 +305,27 @@ var protocolConfigMap = map[Protocol]ProtocolConfig{
 // map of bid ID to its position config
 var bidMap = map[int]BidPositionConfig{
 	0: {
-		InitialAllocation: 10557,
+		InitialAllocation: []AssetInfo{{Amount: 10557, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Margined},
 		},
 	},
 	1: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Demex},
 		},
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 24, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 10078,
+				WithdrawnAmount: []AssetInfo{{Amount: 10078, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	2: {
-		InitialAllocation: 18000,
+		InitialAllocation: []AssetInfo{{Amount: 18000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			NeptuneVenuePositionConfig{
 				Denom:        INJECTIVE_ATOM,
@@ -331,14 +336,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 18, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 18405,
+				WithdrawnAmount: []AssetInfo{{Amount: 18405, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	3: {
-		InitialAllocation: 50000,
+		InitialAllocation: []AssetInfo{{Amount: 50000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
@@ -351,28 +356,28 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 17, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 11,
 			},
 		},
 	},
 	4: {
-		InitialAllocation: 36093,
+		InitialAllocation: []AssetInfo{{Amount: 36093, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Shade},
 		},
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 18, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 12,
 			},
 		},
 	},
 	5: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			NolusVenuePositionConfig{
 				PoolContractAddress: "nolus1jufcaqm6657xmfltdezzz85quz92rmtd88jk5x0hq9zqseem32ysjdm990",
@@ -384,28 +389,28 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 18, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 10044,
+				WithdrawnAmount: []AssetInfo{{Amount: 10044, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	6: {
-		InitialAllocation: 3143,
+		InitialAllocation: []AssetInfo{{Amount: 3143, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: WhiteWhale},
 		},
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 18, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 14,
 			},
 		},
 	},
 	7: {
-		InitialAllocation: 17912,
+		InitialAllocation: []AssetInfo{{Amount: 17912, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportTerra,
@@ -425,7 +430,7 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 1, 18, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 15,
 			},
@@ -433,7 +438,7 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 2 starts here
 	11: {
-		InitialAllocation: 81000,
+		InitialAllocation: []AssetInfo{{Amount: 81000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "2371",
@@ -451,34 +456,34 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 4, 20, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 85077,
+				WithdrawnAmount: []AssetInfo{{Amount: 85077, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	12: {
-		InitialAllocation: 33953,
+		InitialAllocation: []AssetInfo{{Amount: 33953, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Shade},
 		},
 	},
 	14: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: WhiteWhale},
 		},
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 12, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 12576,
+				WithdrawnAmount: []AssetInfo{{Amount: 12576, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	15: {
-		InitialAllocation: 26000,
+		InitialAllocation: []AssetInfo{{Amount: 26000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportTerra,
@@ -498,14 +503,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 4, 15, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 32,
 			},
 		},
 	},
 	16: {
-		InitialAllocation: 42000,
+		InitialAllocation: []AssetInfo{{Amount: 42000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "2533",
@@ -515,14 +520,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 4, 15, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 42455,
+				WithdrawnAmount: []AssetInfo{{Amount: 42455, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	17: {
-		InitialAllocation: 51000,
+		InitialAllocation: []AssetInfo{{Amount: 51000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -533,7 +538,7 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 4, 20, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 52300,
+				WithdrawnAmount: []AssetInfo{{Amount: 52300, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
@@ -541,7 +546,7 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 3 starts here
 	18: {
-		InitialAllocation: 45585,
+		InitialAllocation: []AssetInfo{{Amount: 45585, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -552,14 +557,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 4, 13, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 46203,
+				WithdrawnAmount: []AssetInfo{{Amount: 46203, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	22: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
@@ -579,14 +584,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 53,
 			},
 		},
 	},
 	23: {
-		InitialAllocation: 22340,
+		InitialAllocation: []AssetInfo{{Amount: 22340, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			NolusVenuePositionConfig{
 				PoolContractAddress: "nolus1u0zt8x3mkver0447glfupz9lz6wnt62j70p5fhhtu3fr46gcdd9s5dz9l6",
@@ -598,14 +603,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 5, 13, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 22340,
+				WithdrawnAmount: []AssetInfo{{Amount: 22340, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	24: {
-		InitialAllocation: 43962,
+		InitialAllocation: []AssetInfo{{Amount: 43962, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "3091",
@@ -622,7 +627,7 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 5, 20, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 44757,
+				WithdrawnAmount: []AssetInfo{{Amount: 44757, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
@@ -630,7 +635,7 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 4 starts here
 	25: {
-		InitialAllocation: 170000,
+		InitialAllocation: []AssetInfo{{Amount: 170000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -641,14 +646,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 178563,
+				WithdrawnAmount: []AssetInfo{{Amount: 178563, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	27: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			NeptuneVenuePositionConfig{
 				Denom:        INJECTIVE_ATOM,
@@ -659,7 +664,7 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 6, 23, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 10168,
+				WithdrawnAmount: []AssetInfo{{Amount: 10168, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
@@ -667,7 +672,7 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 5 starts here
 	31: {
-		InitialAllocation: 153000,
+		InitialAllocation: []AssetInfo{{Amount: 153000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "4068",
@@ -676,7 +681,7 @@ var bidMap = map[int]BidPositionConfig{
 		},
 	},
 	32: {
-		InitialAllocation: 48000,
+		InitialAllocation: []AssetInfo{{Amount: 48000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportTerra,
@@ -689,14 +694,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 21, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 48717,
+				WithdrawnAmount: []AssetInfo{{Amount: 48717, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	33: {
-		InitialAllocation: 108000,
+		InitialAllocation: []AssetInfo{{Amount: 108000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -707,28 +712,28 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 23, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 111166,
+				WithdrawnAmount: []AssetInfo{{Amount: 111166, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	36: {
-		InitialAllocation: 30000,
+		InitialAllocation: []AssetInfo{{Amount: 30000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Margined},
 		},
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 23, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 30663,
+				WithdrawnAmount: []AssetInfo{{Amount: 30663, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	38: {
-		InitialAllocation: 48000,
+		InitialAllocation: []AssetInfo{{Amount: 48000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
@@ -741,14 +746,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 7, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 50743,
+				WithdrawnAmount: []AssetInfo{{Amount: 50743, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	39: {
-		InitialAllocation: 37050,
+		InitialAllocation: []AssetInfo{{Amount: 37050, DisplayName: "USDC"}},
 		Venues: []VenuePositionConfig{
 			NolusVenuePositionConfig{
 				PoolContractAddress: "nolus1ueytzwqyadm6r0z8ajse7g6gzum4w3vv04qazctf8ugqrrej6n4sq027cf",
@@ -760,14 +765,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 5, 25, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 37647,
+				WithdrawnAmount: []AssetInfo{{Amount: 37647, DisplayName: "USDC"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	40: {
-		InitialAllocation: 19950,
+		InitialAllocation: []AssetInfo{{Amount: 19950, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
 				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
@@ -779,7 +784,7 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 6, 13, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 54,
 			},
@@ -787,22 +792,28 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 6 starts here
 	41: {
-		InitialAllocation: 224000,
+		InitialAllocation: []AssetInfo{{Amount: 224000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "4612",
 				DepositedDenom:  NEUTRON_ATOM,
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 8, 17, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 224000, DisplayName: "ATOM"}},
+			},
+		},
 	},
 	42: {
-		InitialAllocation: 40000,
+		InitialAllocation: []AssetInfo{{Amount: 40000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Shade},
 		},
 	},
 	43: {
-		InitialAllocation: 112000,
+		InitialAllocation: []AssetInfo{{Amount: 112000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -810,27 +821,39 @@ var bidMap = map[int]BidPositionConfig{
 				PositionID: "14010188",
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 8, 20, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 112399, DisplayName: "ATOM"}},
+			},
+		},
 	},
 	45: {
-		InitialAllocation: 172000,
+		InitialAllocation: []AssetInfo{{Amount: 172000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
 				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
 				PoolId:       "32768",
-				ActiveShares: 171724645382,
+				ActiveShares: 0,
 				PoolType:     Stablestake,
+			},
+		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 8, 19, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 172371, DisplayName: "ATOM"}},
 			},
 		},
 	},
 	48: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Pryzm},
 		},
 	},
 	// round 7 starts here
 	50: {
-		InitialAllocation: 367300,
+		InitialAllocation: []AssetInfo{{Amount: 367300, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -843,19 +866,33 @@ var bidMap = map[int]BidPositionConfig{
 				PositionID: "14691901",
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 9, 17, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 375440, DisplayName: "ATOM"}},
+			},
+		},
 	},
 	51: {
-		InitialAllocation: 78000,
+		InitialAllocation: []AssetInfo{{Amount: 78000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			DualityVenuePositionConfig{
 				PoolAddress:  "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
 				Address:      "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-				ActiveShares: 330342489391671,
+				ActiveShares: 0,
+			},
+		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 9, 19, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{},
+				WithdrawnShares: 0,
+				CompoundedBidId: 84,
 			},
 		},
 	},
 	53: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
@@ -875,14 +912,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 6, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 62,
 			},
 		},
 	},
 	54: {
-		InitialAllocation: 26790,
+		InitialAllocation: []AssetInfo{{Amount: 26790, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
 				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
@@ -894,27 +931,35 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 7, 11, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 26903,
+				WithdrawnAmount: []AssetInfo{{Amount: 26903, DisplayName: "ATOM"}},
 				WithdrawnShares: 0,
 				CompoundedBidId: 0,
 			},
 		},
 	},
 	55: {
-		InitialAllocation: 42000,
+		InitialAllocation: []AssetInfo{{Amount: 42000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportTerra,
 				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
 				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
 				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
-				ActiveShares:     19264866037,
+				ActiveShares:     0,
+			},
+		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 9, 15, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{},
+				WithdrawnShares: 0,
+				CompoundedBidId: 83,
 			},
 		},
 	},
 	// round 8 starts here
 	57: {
-		InitialAllocation: 31920,
+		InitialAllocation: []AssetInfo{{Amount: 31920, DisplayName: "USDC"}},
 		Venues: []VenuePositionConfig{
 			NolusVenuePositionConfig{
 				PoolContractAddress: "nolus1ueytzwqyadm6r0z8ajse7g6gzum4w3vv04qazctf8ugqrrej6n4sq027cf",
@@ -923,9 +968,17 @@ var bidMap = map[int]BidPositionConfig{
 				ActiveShares:        28988735638,
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 8, 27, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 32197, DisplayName: "USDC"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
 	},
 	58: {
-		InitialAllocation: 101586,
+		InitialAllocation: []AssetInfo{{Amount: 101586, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -933,9 +986,17 @@ var bidMap = map[int]BidPositionConfig{
 				PositionID: "14924293",
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 10, 8, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 103971, DisplayName: "ATOM"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
 	},
 	59: {
-		InitialAllocation: 66020,
+		InitialAllocation: []AssetInfo{{Amount: 66020, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportTerra,
@@ -945,9 +1006,17 @@ var bidMap = map[int]BidPositionConfig{
 				ActiveShares:     30349183715,
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 10, 8, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 65958, DisplayName: "ATOM"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
 	},
 	60: {
-		InitialAllocation: 198000,
+		InitialAllocation: []AssetInfo{{Amount: 198000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "5054",
@@ -956,7 +1025,7 @@ var bidMap = map[int]BidPositionConfig{
 		},
 	},
 	62: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			AstroportVenuePositionConfig{
 				Protocol:         AstroportNeutron,
@@ -976,14 +1045,14 @@ var bidMap = map[int]BidPositionConfig{
 		Withdrawals: []Withdrawal{
 			{
 				Date:            time.Date(2025, 8, 6, 0, 0, 0, 0, time.UTC),
-				WithdrawnAmount: 0,
+				WithdrawnAmount: []AssetInfo{},
 				WithdrawnShares: 0,
 				CompoundedBidId: 78,
 			},
 		},
 	},
 	65: {
-		InitialAllocation: 8755, // 2888 ATOM and 25084 USDC ~ 8.5k ATOM
+		InitialAllocation: []AssetInfo{{Amount: 2888, DisplayName: "ATOM"}, {Amount: 25084, DisplayName: "USDC"}},
 		Venues: []VenuePositionConfig{
 			ElysVenuePositionConfig{
 				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
@@ -992,9 +1061,17 @@ var bidMap = map[int]BidPositionConfig{
 				PoolType:     AMM,
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 8, 22, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 2911, DisplayName: "ATOM"}, {Amount: 26180, DisplayName: "USDC"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
 	},
 	67: {
-		InitialAllocation: 30000,
+		InitialAllocation: []AssetInfo{{Amount: 30000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			UxVenuePositionConfig{
 				Address: "umee18zw3ud29vtxqvlljrnnexphtn62yccc700lek432cy9ngv4n4kgqupkr02",
@@ -1004,7 +1081,7 @@ var bidMap = map[int]BidPositionConfig{
 	},
 	// round 9 starts here
 	70: {
-		InitialAllocation: 36000,
+		InitialAllocation: []AssetInfo{{Amount: 36000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			DualityVenuePositionConfig{
 				PoolAddress:  "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
@@ -1014,7 +1091,7 @@ var bidMap = map[int]BidPositionConfig{
 		},
 	},
 	71: {
-		InitialAllocation: 144000,
+		InitialAllocation: []AssetInfo{{Amount: 144000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MarsVenuePositionConfig{
 				CreditAccountID: "5189",
@@ -1023,7 +1100,7 @@ var bidMap = map[int]BidPositionConfig{
 		},
 	},
 	72: {
-		InitialAllocation: 13800,
+		InitialAllocation: []AssetInfo{{Amount: 13800, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			NeptuneVenuePositionConfig{
 				Denom:        INJECTIVE_ATOM,
@@ -1032,8 +1109,27 @@ var bidMap = map[int]BidPositionConfig{
 			},
 		},
 	},
+	74: {
+		InitialAllocation: []AssetInfo{{Amount: 12172, DisplayName: "ATOM"}, {Amount: 46170, DisplayName: "USDC"}},
+		Venues: []VenuePositionConfig{
+			ElysVenuePositionConfig{
+				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:       "1",
+				ActiveShares: 0,
+				PoolType:     AMM,
+			},
+		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 10, 8, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 15221, DisplayName: "ATOM"}, {Amount: 35763, DisplayName: "USDC"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
+	},
 	77: {
-		InitialAllocation: 749, // 749 atom, 609302 arch
+		InitialAllocation: []AssetInfo{{Amount: 749, DisplayName: "ATOM"}, {Amount: 609302, DisplayName: "ARCH"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "3111",
@@ -1041,29 +1137,36 @@ var bidMap = map[int]BidPositionConfig{
 				PositionID: "14958520",
 			},
 		},
+		Withdrawals: []Withdrawal{
+			{
+				Date:            time.Date(2025, 10, 9, 0, 0, 0, 0, time.UTC),
+				WithdrawnAmount: []AssetInfo{{Amount: 749, DisplayName: "ATOM"}},
+				WithdrawnShares: 0,
+				CompoundedBidId: 0,
+			},
+		},
 	},
-	//todo: check what happened with compounding on 78
-	// 78: {
-	// 	InitialAllocation: 10000,
-	// 	Venues: []VenuePositionConfig{
-	// 		AstroportVenuePositionConfig{
-	// 			Protocol:         AstroportNeutron,
-	// 			PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
-	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	// 			ActiveShares:     0,
-	// 		},
-	// 		AstroportVenuePositionConfig{
-	// 			Protocol:         AstroportNeutron,
-	// 			PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
-	// 			IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
-	// 			Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
-	// 			ActiveShares:     0,
-	// 		},
-	// 	},
-	// },
+	78: {
+		InitialAllocation: []AssetInfo{{Amount: 2396, DisplayName: "AMATOM"}, {Amount: 813, DisplayName: "STATOM"}, {Amount: 1121, DisplayName: "DATOM"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron14y0xyavpf5xznw56u3xml9f2jmx8ruk3y8f5e6zzkd9mhmcps3fs59g4vt",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     1179277102,
+			},
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1w8vmg3zwyh62edp7uxpaw90447da9zzlv0kqh2ajye6a6mseg06qseyv5m",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqg4gknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     1019349925,
+			},
+		},
+	},
 	79: {
-		InitialAllocation: 46900,
+		InitialAllocation: []AssetInfo{{Amount: 46900, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			OsmosisVenuePositionConfig{
 				PoolID:     "1283",
@@ -1073,9 +1176,110 @@ var bidMap = map[int]BidPositionConfig{
 		},
 	},
 	81: {
-		InitialAllocation: 10000,
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
 		Venues: []VenuePositionConfig{
 			MissingVenuePositionConfig{Protocol: Pryzm},
 		},
 	},
+	// round 10 starts here
+	82: {
+		InitialAllocation: []AssetInfo{{Amount: 32465, DisplayName: "ATOM"}, {Amount: 34137, DisplayName: "stATOM"}},
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14976154",
+			},
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "14979786",
+			},
+		},
+	},
+	83: {
+		InitialAllocation: []AssetInfo{{Amount: 37426, DisplayName: "ATOM"}, {Amount: 36398, DisplayName: "dATOM"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportTerra,
+				PoolAddress:      "terra1a0h6vrzkztjystg8sd949qyrc6mw9gzxk2870cr2mukg53uzgvqs46qul9",
+				IncentiveAddress: "terra1eywh4av8sln6r45pxq45ltj798htfy0cfcf7fy3pxc2gcv6uc07se4ch9x",
+				Address:          "terra12wq57ea7m7m8wx4qhsj04fyc78pv2n3h888vfzuv7n7k7qlq2dyssuyf8h",
+				ActiveShares:     36712395713,
+			},
+		},
+	},
+	84: {
+		InitialAllocation: []AssetInfo{{Amount: 278000, DisplayName: "ATOM"}},
+		Venues: []VenuePositionConfig{
+			DualityVenuePositionConfig{
+				PoolAddress:  "neutron18ua532r8lpy8scvysrgcjneyrwuj4x0ne4t2azphxksya596l4cq23lkp9",
+				Address:      "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares: 1729941118835512,
+			},
+		},
+	},
+	85: {
+		InitialAllocation: []AssetInfo{{Amount: 10000, DisplayName: "ATOM"}},
+		Venues: []VenuePositionConfig{
+			MissingVenuePositionConfig{Protocol: Shade},
+		},
+	},
+	86: {
+		InitialAllocation: []AssetInfo{{Amount: 356, DisplayName: "ATOM"}, {Amount: 371102811, DisplayName: "JURIS"}},
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "3115",
+				Address:    "osmo12fx08698ydqkzy687w4ce4qut80tx287dz8qadu8wy0hv9yllt3qgt2t35", // vortex contract
+				PositionID: "14981415",
+			},
+		},
+	},
+	// round 11 starts here
+	87: {
+		InitialAllocation: []AssetInfo{{Amount: 106866.475528, DisplayName: "ATOM"}, {Amount: 118500, DisplayName: "STATOM"}},
+		Venues: []VenuePositionConfig{
+			OsmosisVenuePositionConfig{
+				PoolID:     "1283",
+				Address:    "osmo1cuwe7dzgpemwxqzpkhyjwfeev2hcgd9de8xp566hrly6wtpcrc7qgp9jdx",
+				PositionID: "15045670",
+			},
+		},
+	},
+	88: {
+		InitialAllocation: []AssetInfo{{Amount: 190000, DisplayName: "ATOM"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1fpfuj44utw2zgf2v92z4m3yd3npzvd2kc0lvnq5wfgsa8v523hcspfdk7k",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     734834880492499,
+			},
+		},
+	},
+	89: {
+		InitialAllocation: []AssetInfo{{Amount: 1091861, DisplayName: "NTRN"}, {Amount: 57000, DisplayName: "USDC"}},
+		Venues: []VenuePositionConfig{
+			ElysVenuePositionConfig{
+				Address:      "elys14crljzq0qmgaqdcpr69sna3z0r83u29srdxv8qvnfq9n7uj4kgtqg4quae",
+				PoolId:       "8",
+				ActiveShares: 211135581371088801510827,
+				PoolType:     AMM,
+			},
+		},
+	},
+	1000: { // start ntrn bids from 1000
+		InitialAllocation: []AssetInfo{{Amount: 337938, DisplayName: "NTRN"}, {Amount: 337500, DisplayName: "DNTRN"}},
+		Venues: []VenuePositionConfig{
+			AstroportVenuePositionConfig{
+				Protocol:         AstroportNeutron,
+				PoolAddress:      "neutron1pd9u7h4vf36vtj5lqlcp4376xf4wktdnhmzqtn8958wyh0nzwsmsavc2dz",
+				IncentiveAddress: "neutron173fd8wpfzyqnfnpwq2zhtgdstujrjz2wkprkjfr6gqgknctjyq6m3tch",
+				Address:          "neutron1w7f40hgfc505a2wnjsl5pg35yl8qpawv48w5yekax4xj2m43j09s5fa44f",
+				ActiveShares:     337906147025,
+			},
+		},
+	},
+	// round 12 starts here
 }
